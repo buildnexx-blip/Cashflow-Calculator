@@ -45,17 +45,21 @@
   <script type="importmap">
 {
   "imports": {
+    "vite": "https://aistudiocdn.com/vite@^7.2.7",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
     "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "html2canvas": "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm",
-    "jspdf": "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/+esm"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "html2canvas": "https://aistudiocdn.com/html2canvas@^1.4.1",
+    "jspdf": "https://aistudiocdn.com/jspdf@^3.0.4"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
+    <!-- Point to the React Entry File -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
