@@ -9,6 +9,19 @@ import html2canvas from 'html2canvas';
 // @ts-ignore
 import { jsPDF } from 'jspdf';
 
+const DISCLAIMER_TEXT = (
+  <>
+    <p className="mb-2"><strong>Important Information:</strong> This calculator is a modeling tool provided for illustrative purposes only and does not constitute financial, legal, or tax advice. Results are estimates based on the inputs you provide and do not take into account your personal financial circumstances, objectives, or needs.</p>
+    <ul className="list-disc pl-5 space-y-1 mb-2">
+      <li><strong>Estimates Only:</strong> This is a model, not a prediction. Actual amounts, repayment periods, and investment returns may vary due to market forces and individual circumstances.</li>
+      <li><strong>Lending Criteria:</strong> Using this calculator does not guarantee loan eligibility. You must satisfy your lender's specific lending criteria.</li>
+      <li><strong>Interest Rates & Repayments:</strong> Calculations assume interest rates remain constant for the loan term unless otherwise modelled. 'Interest Only' repayments do not reduce the principal; reverting to 'Principal & Interest' will significantly increase repayments.</li>
+      <li><strong>Fees & Charges:</strong> Government charges (e.g., Stamp Duty) are estimates based on current state brackets. Loan establishment fees, Lenders Mortgage Insurance (LMI), and other bank fees are not included unless explicitly added to 'Purchase Costs'.</li>
+    </ul>
+    <p><strong>Limitation of Liability:</strong> Homez Buyers Advocacy accepts no liability for errors, omissions, or any loss or damage suffered as a result of reliance on this information. We recommend consulting with a qualified finance professional before making any investment decisions.</p>
+  </>
+);
+
 const App: React.FC = () => {
   const [inputs, setInputs] = useState<InputState>(DEFAULT_INPUTS);
   const [results, setResults] = useState<CalculationResult | null>(null);
@@ -498,9 +511,11 @@ const App: React.FC = () => {
                </table>
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* Disclaimers Section (Bottom of App - Collapsible) */}
+      <DisclaimerAccordion />
 
       {/* OFF-SCREEN PRINT TEMPLATES (Hidden but captured) */}
       <div className="fixed top-0 left-[-9999px]">
@@ -518,6 +533,37 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+// --- HELPER COMPONENTS ---
+
+const DisclaimerAccordion: React.FC = () => {
+   const [isOpen, setIsOpen] = useState(false);
+
+   return (
+     <div className="mt-12 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+       <button 
+         onClick={() => setIsOpen(!isOpen)}
+         className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+       >
+         <span className="text-sm font-serif font-bold text-[#064E2C]">Disclaimers & Assumptions</span>
+         <svg 
+           className={`w-5 h-5 text-[#064E2C] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+           fill="none" 
+           viewBox="0 0 24 24" 
+           stroke="currentColor"
+         >
+           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+         </svg>
+       </button>
+       
+       {isOpen && (
+         <div className="p-6 bg-white text-xs text-gray-500 leading-relaxed border-t border-gray-200">
+           {DISCLAIMER_TEXT}
+         </div>
+       )}
+     </div>
+   );
+ };
 
 // --- PRINT REPORT COMPONENT ---
 const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> = ({ inputs, results }) => {
@@ -646,56 +692,58 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
       </div>
 
       {/* PAGE 2: CHARTS & PROJECTIONS */}
-      <div id="print-page-2" className="w-[900px] h-auto bg-white p-10 font-sans text-gray-800">
-         {/* Small Header Context */}
-         <div className="border-b border-gray-200 pb-4 mb-8 flex justify-between items-end">
-            <h3 className="text-xl font-serif font-bold text-[#064E2C]">Projections & Forecast</h3>
-            <span className="text-sm text-gray-400">Page 2</span>
-         </div>
+      <div id="print-page-2" className="w-[900px] h-auto bg-white p-10 font-sans text-gray-800 flex flex-col justify-between">
+         <div>
+            {/* Small Header Context */}
+            <div className="border-b border-gray-200 pb-4 mb-8 flex justify-between items-end">
+               <h3 className="text-xl font-serif font-bold text-[#064E2C]">Projections & Forecast</h3>
+               <span className="text-sm text-gray-400">Page 2</span>
+            </div>
 
-         {/* Chart Section */}
-         <div className="mb-10">
-            <ProjectionChart 
-               data={results.projections} 
-               positiveCashflowYear={results.positiveCashflowYear} 
-               isPrintMode={true} 
-            />
-         </div>
+            {/* Chart Section */}
+            <div className="mb-10">
+               <ProjectionChart 
+                  data={results.projections} 
+                  positiveCashflowYear={results.positiveCashflowYear} 
+                  isPrintMode={true} 
+               />
+            </div>
 
-         {/* Full Projection Table */}
-         <div className="mb-10">
-            <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">10 Year Projection</h3>
-            <table className="w-full text-xs text-left">
-               <thead className="bg-[#064E2C] text-white">
-                  <tr>
-                     <th className="p-2">Year</th>
-                     <th className="p-2">Value</th>
-                     <th className="p-2">Loan</th>
-                     <th className="p-2">Equity</th>
-                     <th className="p-2">Rent (Wk)</th>
-                     <th className="p-2 text-right">Cashflow (Yr)</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-gray-100">
-                  {results.projections.slice(0, 11).map(p => (
-                     <tr key={p.year}>
-                        <td className="p-2 font-medium">Yr {p.year}</td>
-                        <td className="p-2">${Math.round(p.propertyValue).toLocaleString()}</td>
-                        <td className="p-2 text-gray-500">${Math.round(p.loanBalance).toLocaleString()}</td>
-                        <td className="p-2 font-medium text-green-700">${Math.round(p.equity).toLocaleString()}</td>
-                        <td className="p-2">${Math.round(p.weeklyRent).toLocaleString()}</td>
-                        <td className={`p-2 text-right font-bold ${p.netCashflow > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                           ${Math.round(p.netCashflow).toLocaleString()}
-                        </td>
+            {/* Full Projection Table */}
+            <div className="mb-10">
+               <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">10 Year Projection</h3>
+               <table className="w-full text-xs text-left">
+                  <thead className="bg-[#064E2C] text-white">
+                     <tr>
+                        <th className="p-2">Year</th>
+                        <th className="p-2">Value</th>
+                        <th className="p-2">Loan</th>
+                        <th className="p-2">Equity</th>
+                        <th className="p-2">Rent (Wk)</th>
+                        <th className="p-2 text-right">Cashflow (Yr)</th>
                      </tr>
-                  ))}
-               </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                     {results.projections.slice(0, 11).map(p => (
+                        <tr key={p.year}>
+                           <td className="p-2 font-medium">Yr {p.year}</td>
+                           <td className="p-2">${Math.round(p.propertyValue).toLocaleString()}</td>
+                           <td className="p-2 text-gray-500">${Math.round(p.loanBalance).toLocaleString()}</td>
+                           <td className="p-2 font-medium text-green-700">${Math.round(p.equity).toLocaleString()}</td>
+                           <td className="p-2">${Math.round(p.weeklyRent).toLocaleString()}</td>
+                           <td className={`p-2 text-right font-bold ${p.netCashflow > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                              ${Math.round(p.netCashflow).toLocaleString()}
+                           </td>
+                        </tr>
+                     ))}
+                  </tbody>
+               </table>
+            </div>
          </div>
          
-         <div className="text-center text-xs text-gray-400 pt-8 border-t border-gray-100">
-            <p>Disclaimer: This report is an estimate based on your inputs and does not constitute financial advice. Property values and rental returns are subject to market forces.</p>
-            <p>Generated by Homez Buyers Advocacy Calculator.</p>
+         {/* Extended Disclaimer for PDF */}
+         <div className="bg-gray-50 p-4 rounded text-[10px] text-gray-500 leading-relaxed border-t border-gray-200">
+            {DISCLAIMER_TEXT}
          </div>
       </div>
       </>
