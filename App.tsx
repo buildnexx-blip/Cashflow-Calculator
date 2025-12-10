@@ -9,6 +9,16 @@ import html2canvas from 'html2canvas';
 // @ts-ignore
 import { jsPDF } from 'jspdf';
 
+// --- ZOHO CRM CONFIGURATION ---
+// Extracted from the provided Zoho Web-to-Lead HTML
+const ZOHO_CONFIG = {
+  actionUrl: "https://crm.zoho.com.au/crm/WebToLeadForm", 
+  xnQsjsdp: "6d7e3cca0a1c68c2a5829930ca9bf1a93dd4a6f53d05b0a9c824cd6c031337bc", 
+  xmIwtLD: "3e7827f2d4a8798898396f2f5b3bdc4e8c6b176159ef093019ae409c020c21e5fc69f739918272967517914b31c0f8be",
+  actionType: "TGVhZHM=",
+  returnURL: "https://www.homez.au/cashflow-calculator" 
+};
+
 const DISCLAIMER_TEXT = (
   <>
     <p className="mb-2"><strong>Important Information:</strong> This calculator is a modeling tool provided for illustrative purposes only and does not constitute financial, legal, or tax advice. Results are estimates based on the inputs you provide and do not take into account your personal financial circumstances, objectives, or needs.</p>
@@ -61,7 +71,7 @@ const App: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleFormSubmit = async (userDetails: UserDetails) => {
+  const generatePDF = async (userDetails: UserDetails): Promise<string | null> => {
     setIsGenerating(true);
     
     // Allow DOM to settle
@@ -74,7 +84,6 @@ const App: React.FC = () => {
       try {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
         
         // --- CAPTURE PAGE 1 ---
         const canvas1 = await html2canvas(page1Element, {
@@ -539,7 +548,7 @@ const App: React.FC = () => {
       {isModalOpen && (
         <ShareModal 
           onClose={() => setIsModalOpen(false)} 
-          onSubmit={handleFormSubmit}
+          onGenerate={generatePDF}
           isGenerating={isGenerating}
         />
       )}
@@ -654,7 +663,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
                         <TableRow label="Buyer's Agent Fee" value={inputs.buyersAgentFee} />
                         <TableRow label="Solicitor / Conveyancer" value={inputs.solicitorFee} />
                         <TableRow label="Building & Pest" value={inputs.buildingPestFee} />
-                        {inputs.otherUpfront > 0 && <TableRow label="Misc / Other" value={inputs.otherUpfront} />}
+                        {inputs.otherUpfront > 0 && <TableRow label="Misc / Other" value={inputs.otherUpfront} /> }
                         <tr className="font-bold text-[#064E2C] border-t border-gray-200">
                            <td className="py-2 pt-3">Total Cash Required</td>
                            <td className="py-2 pt-3 text-right">${totalCashRequired.toLocaleString()}</td>
@@ -767,48 +776,51 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
 
 interface ShareModalProps {
   onClose: () => void;
-  onSubmit: (data: UserDetails) => Promise<string | null>;
+  onGenerate: (data: UserDetails) => Promise<string | null>;
   isGenerating: boolean;
 }
 
-const ShareModal: React.FC<ShareModalProps> = ({ onClose, onSubmit, isGenerating }) => {
-  const [formData, setFormData] = useState<UserDetails>({
-    name: '',
+const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerating }) => {
+  // Local state matches the Zoho form fields exactly
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    goal: 'Investment'
+    purchaseType: 'Investment (Residential)' // Default mapped to LEADCF2
   });
   
   const [generatedFile, setGeneratedFile] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [zohoSubmitted, setZohoSubmitted] = useState(false);
 
+  // NOTE: This handles the Dual Action:
+  // 1. Generate the PDF Client Side
+  // 2. Submit the Form to Zoho via hidden iframe
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fileName = await onSubmit(formData);
+    
+    // Construct UserDetails for PDF generation (combining names)
+    const pdfDetails: UserDetails = {
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      phone: formData.phone,
+      goal: formData.purchaseType.includes('Investment') ? 'Investment' : 'Owner Occupier'
+    };
+
+    // 1. Generate PDF
+    const fileName = await onGenerate(pdfDetails);
     if (fileName) {
        setGeneratedFile(fileName);
+       
+       // 2. Trigger Zoho Submission via the hidden formRef
+       // We use a small timeout to allow UI update if needed
+       if (formRef.current) {
+          formRef.current.submit();
+          setZohoSubmitted(true);
+       }
     }
   };
-  
-  // Construct Mailto Link
-  const subject = encodeURIComponent(`Homez Property Analysis - ${formData.name}`);
-  const body = encodeURIComponent(
-`Hi Team,
-
-Please find attached the property analysis scenario I just generated.
-
-Client Details:
-Name: ${formData.name}
-Phone: ${formData.phone}
-Email: ${formData.email}
-Goal: ${formData.goal}
-
-[Please attach the downloaded PDF file: ${generatedFile || 'Report.pdf'}]
-
-Regards,
-${formData.name}`
-  );
-
-  const mailtoLink = `mailto:admin@homezbuyers.com.au?cc=${formData.email}&subject=${subject}&body=${body}`;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -826,33 +838,71 @@ ${formData.name}`
            // STEP 1: Form
            <>
               <h3 className="text-2xl font-serif font-bold text-[#064E2C] mb-2 text-center">Download Report</h3>
-              <p className="text-center text-gray-500 text-sm mb-6">Enter your details to generate and download the full analysis PDF.</p>
+              <p className="text-center text-gray-500 text-sm mb-6">Enter your details to generate and download the full analysis PDF. One of our strategists will be in touch.</p>
+              
+              {/* HIDDEN IFRAME FOR ZOHO TARGET */}
+              <iframe name="zoho_hidden_frame" id="zoho_hidden_frame" className="hidden" style={{display:'none'}}></iframe>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {/* ACTUAL FORM THAT SUBMITS TO ZOHO */}
+              <form 
+                ref={formRef}
+                action={ZOHO_CONFIG.actionUrl} 
+                method="POST" 
+                target="zoho_hidden_frame"
+                onSubmit={handleSubmit} 
+                className="space-y-4"
+              >
+               {/* Zoho Hidden Fields */}
+               <input type="hidden" name="xnQsjsdp" value={ZOHO_CONFIG.xnQsjsdp} />
+               <input type="hidden" name="xmIwtLD" value={ZOHO_CONFIG.xmIwtLD} />
+               <input type="hidden" name="actionType" value={ZOHO_CONFIG.actionType} />
+               <input type="hidden" name="returnURL" value={ZOHO_CONFIG.returnURL} />
+
+               {/* FIRST NAME */}
                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input 
                      required
+                     name="First Name" 
                      type="text" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
-                     value={formData.name}
-                     onChange={e => setFormData({...formData, name: e.target.value})}
+                     value={formData.firstName}
+                     onChange={e => setFormData({...formData, firstName: e.target.value})}
                   />
                </div>
+
+               {/* LAST NAME */}
+               <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input 
+                     required
+                     name="Last Name" 
+                     type="text" 
+                     className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
+                     value={formData.lastName}
+                     onChange={e => setFormData({...formData, lastName: e.target.value})}
+                  />
+               </div>
+
+               {/* EMAIL */}
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                   <input 
                      required
+                     name="Email"
                      type="email" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
                      value={formData.email}
                      onChange={e => setFormData({...formData, email: e.target.value})}
                   />
                </div>
+
+               {/* PHONE / MOBILE */}
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone / Mobile</label>
                   <input 
                      required
+                     name="Phone"
                      type="tel" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
                      value={formData.phone}
@@ -860,31 +910,28 @@ ${formData.name}`
                   />
                </div>
                
-               <div className="pt-2">
-                  <span className="block text-sm font-medium text-gray-700 mb-2">Primary Goal</span>
-                  <div className="flex gap-4">
-                     <label className="flex items-center gap-2 cursor-pointer">
-                     <input 
-                        type="radio" 
-                        name="goal" 
-                        value="Investment"
-                        checked={formData.goal === 'Investment'}
-                        onChange={() => setFormData({...formData, goal: 'Investment'})}
-                        className="w-4 h-4 text-[#064E2C] focus:ring-[#064E2C]"
-                     />
-                     <span className="text-sm text-gray-700">Investment</span>
-                     </label>
-                     <label className="flex items-center gap-2 cursor-pointer">
-                     <input 
-                        type="radio" 
-                        name="goal" 
-                        value="Owner Occupier"
-                        checked={formData.goal === 'Owner Occupier'}
-                        onChange={() => setFormData({...formData, goal: 'Owner Occupier'})}
-                        className="w-4 h-4 text-[#064E2C] focus:ring-[#064E2C]"
-                     />
-                     <span className="text-sm text-gray-700">Owner Occupier</span>
-                     </label>
+               {/* TYPE OF PURCHASE (LEADCF2) */}
+               <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type of Purchase</label>
+                  <div className="relative">
+                    <select 
+                      name="LEADCF2"
+                      value={formData.purchaseType}
+                      onChange={(e) => setFormData({...formData, purchaseType: e.target.value})}
+                      className="w-full rounded-full border border-gray-300 px-4 py-2 appearance-none focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none bg-white"
+                    >
+                      <option value="-None-">-None-</option>
+                      <option value="Investment (Residential)">Investment (Residential)</option>
+                      <option value="Primary Residence">Primary Residence</option>
+                      <option value="Investment (Commercial)">Investment (Commercial)</option>
+                      <option value="Primary Commercial">Primary Commercial</option>
+                      <option value="SMSF Investment">SMSF Investment</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                </div>
 
@@ -902,13 +949,13 @@ ${formData.name}`
                      Generating...
                      </>
                   ) : (
-                     'Generate & Download PDF'
+                     'Generate & Enquire'
                   )}
                </button>
               </form>
            </>
         ) : (
-           // STEP 2: Success / Email Instruction
+           // STEP 2: Success
            <div className="text-center space-y-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                  <svg className="w-8 h-8 text-[#064E2C]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -916,26 +963,24 @@ ${formData.name}`
                  </svg>
               </div>
               <div>
-                 <h3 className="text-2xl font-serif font-bold text-[#064E2C] mb-2">Report Downloaded!</h3>
+                 <h3 className="text-2xl font-serif font-bold text-[#064E2C] mb-2">Success!</h3>
                  <p className="text-gray-600 text-sm">
-                    Your PDF report has been downloaded to your device.
+                    Your PDF report has been downloaded.
                  </p>
+                 {zohoSubmitted && (
+                     <p className="text-xs text-[#064E2C] mt-2 font-medium">
+                        Your inquiry has been sent to our team.
+                     </p>
+                 )}
                  <div className="bg-amber-50 border border-[#C6A672] p-4 rounded-xl mt-4 text-left">
-                    <p className="text-sm font-medium text-[#064E2C] mb-1">Final Step: Email to Agent</p>
+                    <p className="text-sm font-medium text-[#064E2C] mb-1">Check your downloads</p>
                     <p className="text-xs text-gray-600">
-                       Due to browser security, we cannot automatically attach the file. Please click the button below to open your email client, then <strong>manually attach the file</strong> ({generatedFile}).
+                       The file <strong>{generatedFile}</strong> should appear in your browser downloads shortly.
                     </p>
                  </div>
               </div>
-
-              <a 
-                 href={mailtoLink}
-                 className="block w-full bg-[#064E2C] text-white font-bold py-3 rounded-full hover:bg-[#053d22] transition-colors shadow-lg"
-              >
-                 Open Email Client
-              </a>
               
-              <button onClick={onClose} className="text-sm text-gray-400 hover:text-gray-600 underline">
+              <button onClick={onClose} className="block w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-full hover:bg-gray-200 transition-colors">
                  Close
               </button>
            </div>
