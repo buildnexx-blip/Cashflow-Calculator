@@ -84,6 +84,7 @@ const App: React.FC = () => {
       try {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
         // --- CAPTURE PAGE 1 ---
         const canvas1 = await html2canvas(page1Element, {
@@ -91,11 +92,11 @@ const App: React.FC = () => {
            backgroundColor: '#ffffff',
            useCORS: true,
            logging: false,
-           windowWidth: 1200
+           windowWidth: 900,
+           windowHeight: 1272 // Match the fixed CSS height
         });
         const imgData1 = canvas1.toDataURL('image/png');
-        const imgHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
-        pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, imgHeight1);
+        pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
         // --- CAPTURE PAGE 2 ---
         pdf.addPage();
@@ -104,11 +105,11 @@ const App: React.FC = () => {
             backgroundColor: '#ffffff',
             useCORS: true,
             logging: false,
-            windowWidth: 1200
+            windowWidth: 900,
+            windowHeight: 1272 // Match the fixed CSS height
          });
          const imgData2 = canvas2.toDataURL('image/png');
-         const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
-         pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, imgHeight2);
+         pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
         // Generate Filename
         const safeName = userDetails.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -595,126 +596,128 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
    return (
       <>
       {/* PAGE 1: OVERVIEW & CASHFLOW */}
-      <div id="print-page-1" className="w-[900px] h-auto bg-white p-10 font-sans text-gray-800">
-         {/* Print Header */}
-         <div className="border-b-2 border-[#064E2C] pb-6 flex justify-between items-end mb-8">
-            <div>
-               {LOGO_BASE64 ? (
-                 <img src={LOGO_BASE64} alt="Homez" className="h-16 mb-2" />
-               ) : (
-                 <h1 className="text-3xl font-serif font-bold text-[#064E2C]">Homez Buyers Advocacy</h1>
-               )}
-               <p className="text-[#C6A672] font-medium">Investment Property Analysis</p>
-            </div>
-            <div className="text-right text-sm text-gray-500">
-               <p>{new Date().toLocaleDateString()}</p>
-               <p>{inputs.propertyAddress || 'Proposed Property'}</p>
-            </div>
-         </div>
-
-         {/* KPIs */}
-         <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-8">
-            <h3 className="font-serif font-bold text-[#064E2C] mb-4">Key Performance Indicators</h3>
-            <div className="grid grid-cols-4 gap-4">
-               <div className="bg-white p-4 rounded shadow-sm text-center">
-                  <div className="text-xs text-gray-500 uppercase">Gross Yield</div>
-                  <div className="text-xl font-bold text-[#064E2C]">{((results.firstYearCashflow.effectiveGrossRent / inputs.purchasePrice) * 100).toFixed(2)}%</div>
+      <div id="print-page-1" className="w-[900px] h-[1272px] bg-white p-10 font-sans text-gray-800 flex flex-col justify-between">
+         <div>
+            {/* Print Header */}
+            <div className="border-b-2 border-[#064E2C] pb-6 flex justify-between items-end mb-8">
+               <div>
+                  {LOGO_BASE64 ? (
+                    <img src={LOGO_BASE64} alt="Homez" className="h-16 mb-2" />
+                  ) : (
+                    <h1 className="text-3xl font-serif font-bold text-[#064E2C]">Homez Buyers Advocacy</h1>
+                  )}
+                  <p className="text-[#C6A672] font-medium">Investment Property Analysis</p>
                </div>
-               <div className="bg-white p-4 rounded shadow-sm text-center">
-                  <div className="text-xs text-gray-500 uppercase">Cashflow (Weekly)</div>
-                  <div className={`text-xl font-bold ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
-                     ${Math.round(results.firstYearCashflow.netCashflow / 52).toLocaleString()}
+               <div className="text-right text-sm text-gray-500">
+                  <p>{new Date().toLocaleDateString()}</p>
+                  <p>{inputs.propertyAddress || 'Proposed Property'}</p>
+               </div>
+            </div>
+
+            {/* KPIs */}
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-8">
+               <h3 className="font-serif font-bold text-[#064E2C] mb-4">Key Performance Indicators</h3>
+               <div className="grid grid-cols-4 gap-4">
+                  <div className="bg-white p-4 rounded shadow-sm text-center">
+                     <div className="text-xs text-gray-500 uppercase">Gross Yield</div>
+                     <div className="text-xl font-bold text-[#064E2C]">{((results.firstYearCashflow.effectiveGrossRent / inputs.purchasePrice) * 100).toFixed(2)}%</div>
+                  </div>
+                  <div className="bg-white p-4 rounded shadow-sm text-center">
+                     <div className="text-xs text-gray-500 uppercase">Cashflow (Weekly)</div>
+                     <div className={`text-xl font-bold ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
+                        ${Math.round(results.firstYearCashflow.netCashflow / 52).toLocaleString()}
+                     </div>
+                  </div>
+                  <div className="bg-white p-4 rounded shadow-sm text-center">
+                     <div className="text-xs text-gray-500 uppercase">Cashflow (Annual)</div>
+                     <div className={`text-xl font-bold ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
+                        ${Math.round(results.firstYearCashflow.netCashflow).toLocaleString()}
+                     </div>
+                  </div>
+                  <div className="bg-white p-4 rounded shadow-sm text-center">
+                     <div className="text-xs text-gray-500 uppercase">Cash Required</div>
+                     <div className="text-xl font-bold text-[#064E2C]">${totalCashRequired.toLocaleString()}</div>
                   </div>
                </div>
-               <div className="bg-white p-4 rounded shadow-sm text-center">
-                  <div className="text-xs text-gray-500 uppercase">Cashflow (Annual)</div>
-                  <div className={`text-xl font-bold ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
-                     ${Math.round(results.firstYearCashflow.netCashflow).toLocaleString()}
+            </div>
+
+            <div className="grid grid-cols-2 gap-8">
+               {/* Column 1: Property, Finance, Detailed Costs */}
+               <div className="space-y-6">
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                     <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">Property & Finance</h3>
+                     <table className="w-full text-sm">
+                        <tbody>
+                           <TableRow label="Purchase Price" value={inputs.purchasePrice} />
+                           <TableRow label="Loan Amount" value={results.loanAmount} />
+                           <tr><td className="py-1 text-gray-700">Interest Rate</td><td className="text-right font-medium">{inputs.interestRate}%</td></tr>
+                           <tr><td className="py-1 text-gray-700">Loan Term</td><td className="text-right font-medium">{inputs.loanTermYears} Yrs ({inputs.isInterestOnly ? `IO ${inputs.interestOnlyYears}yr` : 'P&I'})</td></tr>
+                        </tbody>
+                     </table>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                     <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">Estimated Upfront Costs</h3>
+                     <table className="w-full text-sm">
+                        <tbody>
+                           <TableRow label={`Deposit (${inputs.depositPercent}%)`} value={depositAmount} />
+                           <TableRow label="Stamp Duty" value={inputs.stampDuty} />
+                           <TableRow label="Buyer's Agent Fee" value={inputs.buyersAgentFee} />
+                           <TableRow label="Solicitor / Conveyancer" value={inputs.solicitorFee} />
+                           <TableRow label="Building & Pest" value={inputs.buildingPestFee} />
+                           {inputs.otherUpfront > 0 && <TableRow label="Misc / Other" value={inputs.otherUpfront} /> }
+                           <tr className="font-bold text-[#064E2C] border-t border-gray-200">
+                              <td className="py-2 pt-3">Total Cash Required</td>
+                              <td className="py-2 pt-3 text-right">${totalCashRequired.toLocaleString()}</td>
+                           </tr>
+                        </tbody>
+                     </table>
                   </div>
                </div>
-               <div className="bg-white p-4 rounded shadow-sm text-center">
-                  <div className="text-xs text-gray-500 uppercase">Cash Required</div>
-                  <div className="text-xl font-bold text-[#064E2C]">${totalCashRequired.toLocaleString()}</div>
-               </div>
-            </div>
-         </div>
 
-         <div className="grid grid-cols-2 gap-8">
-            {/* Column 1: Property, Finance, Detailed Costs */}
-            <div className="space-y-6">
-               <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">Property & Finance</h3>
-                  <table className="w-full text-sm">
-                     <tbody>
-                        <TableRow label="Purchase Price" value={inputs.purchasePrice} />
-                        <TableRow label="Loan Amount" value={results.loanAmount} />
-                        <tr><td className="py-1 text-gray-700">Interest Rate</td><td className="text-right font-medium">{inputs.interestRate}%</td></tr>
-                        <tr><td className="py-1 text-gray-700">Loan Term</td><td className="text-right font-medium">{inputs.loanTermYears} Yrs ({inputs.isInterestOnly ? `IO ${inputs.interestOnlyYears}yr` : 'P&I'})</td></tr>
-                     </tbody>
-                  </table>
-               </div>
+               {/* Column 2: Detailed Cashflow */}
+               <div className="space-y-6">
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-full">
+                     <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">Current Cashflow Position</h3>
+                     <table className="w-full text-sm">
+                        <tbody>
+                           <TableRow label="Gross Rental Income" value={results.firstYearCashflow.potentialGrossRent} />
+                            <tr className="text-gray-500 italic text-xs">
+                              <td className="pl-4 py-1">Less: Vacancy ({inputs.vacancyWeeks} wks)</td>
+                              <td className="text-right py-1">-${Math.round(results.firstYearCashflow.vacancyLoss).toLocaleString()}</td>
+                           </tr>
+                           <tr className="font-semibold text-[#064E2C] bg-[#FFFCED]">
+                              <td className="py-2 pl-2">Effective Gross Rent</td>
+                              <td className="py-2 pr-2 text-right">${Math.round(results.firstYearCashflow.effectiveGrossRent).toLocaleString()}</td>
+                           </tr>
+                           
+                           <tr><td colSpan={2} className="py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Expenses</td></tr>
+                           
+                           <TableRow label="Mortgage Repayments" value={results.firstYearCashflow.mortgageRepayments} />
+                           <TableRow label="Mgmt Fees" value={results.firstYearCashflow.managementFees} />
+                           <TableRow label="Council Rates" value={inputs.councilRates} />
+                           <TableRow label="Insurance" value={inputs.insurance} />
+                           <TableRow label="Repairs & Maint" value={inputs.repairsMaintenance} />
+                           {inputs.landTax > 0 && <TableRow label="Land Tax" value={inputs.landTax} />}
+                           {inputs.bodyCorp > 0 && <TableRow label="Body Corporate" value={inputs.bodyCorp} />}
+                           {inputs.otherExpenses > 0 && <TableRow label="Other Expenses" value={inputs.otherExpenses} />}
 
-               <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">Estimated Upfront Costs</h3>
-                  <table className="w-full text-sm">
-                     <tbody>
-                        <TableRow label={`Deposit (${inputs.depositPercent}%)`} value={depositAmount} />
-                        <TableRow label="Stamp Duty" value={inputs.stampDuty} />
-                        <TableRow label="Buyer's Agent Fee" value={inputs.buyersAgentFee} />
-                        <TableRow label="Solicitor / Conveyancer" value={inputs.solicitorFee} />
-                        <TableRow label="Building & Pest" value={inputs.buildingPestFee} />
-                        {inputs.otherUpfront > 0 && <TableRow label="Misc / Other" value={inputs.otherUpfront} /> }
-                        <tr className="font-bold text-[#064E2C] border-t border-gray-200">
-                           <td className="py-2 pt-3">Total Cash Required</td>
-                           <td className="py-2 pt-3 text-right">${totalCashRequired.toLocaleString()}</td>
-                        </tr>
-                     </tbody>
-                  </table>
-               </div>
-            </div>
-
-            {/* Column 2: Detailed Cashflow */}
-            <div className="space-y-6">
-               <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-full">
-                  <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">Current Cashflow Position</h3>
-                  <table className="w-full text-sm">
-                     <tbody>
-                        <TableRow label="Gross Rental Income" value={results.firstYearCashflow.potentialGrossRent} />
-                         <tr className="text-gray-500 italic text-xs">
-                           <td className="pl-4 py-1">Less: Vacancy ({inputs.vacancyWeeks} wks)</td>
-                           <td className="text-right py-1">-${Math.round(results.firstYearCashflow.vacancyLoss).toLocaleString()}</td>
-                        </tr>
-                        <tr className="font-semibold text-[#064E2C] bg-[#FFFCED]">
-                           <td className="py-2 pl-2">Effective Gross Rent</td>
-                           <td className="py-2 pr-2 text-right">${Math.round(results.firstYearCashflow.effectiveGrossRent).toLocaleString()}</td>
-                        </tr>
-                        
-                        <tr><td colSpan={2} className="py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Expenses</td></tr>
-                        
-                        <TableRow label="Mortgage Repayments" value={results.firstYearCashflow.mortgageRepayments} />
-                        <TableRow label="Mgmt Fees" value={results.firstYearCashflow.managementFees} />
-                        <TableRow label="Council Rates" value={inputs.councilRates} />
-                        <TableRow label="Insurance" value={inputs.insurance} />
-                        <TableRow label="Repairs & Maint" value={inputs.repairsMaintenance} />
-                        {inputs.landTax > 0 && <TableRow label="Land Tax" value={inputs.landTax} />}
-                        {inputs.bodyCorp > 0 && <TableRow label="Body Corporate" value={inputs.bodyCorp} />}
-                        {inputs.otherExpenses > 0 && <TableRow label="Other Expenses" value={inputs.otherExpenses} />}
-
-                        <tr className="font-bold text-[#064E2C] border-t-2 border-[#C6A672] text-base">
-                           <td className="py-3">Net Cashflow</td>
-                           <td className={`py-3 text-right ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
-                              ${Math.round(results.firstYearCashflow.netCashflow).toLocaleString()}
-                           </td>
-                        </tr>
-                     </tbody>
-                  </table>
+                           <tr className="font-bold text-[#064E2C] border-t-2 border-[#C6A672] text-base">
+                              <td className="py-3">Net Cashflow</td>
+                              <td className={`py-3 text-right ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
+                                 ${Math.round(results.firstYearCashflow.netCashflow).toLocaleString()}
+                              </td>
+                           </tr>
+                        </tbody>
+                     </table>
+                  </div>
                </div>
             </div>
          </div>
       </div>
 
       {/* PAGE 2: CHARTS & PROJECTIONS */}
-      <div id="print-page-2" className="w-[900px] h-auto bg-white p-10 font-sans text-gray-800 flex flex-col justify-between">
+      <div id="print-page-2" className="w-[900px] h-[1272px] bg-white p-10 font-sans text-gray-800 flex flex-col justify-between">
          <div>
             {/* Small Header Context */}
             <div className="border-b border-gray-200 pb-4 mb-8 flex justify-between items-end">
@@ -763,8 +766,8 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
             </div>
          </div>
          
-         {/* Extended Disclaimer for PDF */}
-         <div className="bg-gray-50 p-4 rounded text-[10px] text-gray-500 leading-relaxed border-t border-gray-200">
+         {/* Extended Disclaimer for PDF - Reduced Font Size for Printing */}
+         <div className="bg-gray-50 p-4 rounded text-[8px] text-gray-400 leading-tight border-t border-gray-200">
             {DISCLAIMER_TEXT}
          </div>
       </div>
@@ -841,7 +844,11 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
               <p className="text-center text-gray-500 text-sm mb-6">Enter your details to generate and download the full analysis PDF. One of our strategists will be in touch.</p>
               
               {/* HIDDEN IFRAME FOR ZOHO TARGET */}
-              <iframe name="zoho_hidden_frame" id="zoho_hidden_frame" className="hidden" style={{display:'none'}}></iframe>
+              <iframe 
+                name="zoho_hidden_frame" 
+                id="zoho_hidden_frame" 
+                style={{ position: 'absolute', top: 0, left: 0, width: 0, height: 0, border: 0, opacity: 0 }}
+              ></iframe>
 
               {/* ACTUAL FORM THAT SUBMITS TO ZOHO */}
               <form 
@@ -857,6 +864,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                <input type="hidden" name="xmIwtLD" value={ZOHO_CONFIG.xmIwtLD} />
                <input type="hidden" name="actionType" value={ZOHO_CONFIG.actionType} />
                <input type="hidden" name="returnURL" value={ZOHO_CONFIG.returnURL} />
+               
+               {/* Standard Hidden Fields for Lead Source/Description Backup */}
+               <input type="hidden" name="Lead Source" value="Web Calculator" />
+               <input 
+                  type="hidden" 
+                  name="Description" 
+                  value={`Goal: ${formData.purchaseType} - User generated a cashflow analysis PDF.`} 
+               />
 
                {/* FIRST NAME */}
                <div>
@@ -902,7 +917,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone / Mobile</label>
                   <input 
                      required
-                     name="Phone"
+                     name="Mobile" // Changed from 'Phone' to 'Mobile' for better Zoho compatibility
                      type="tel" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
                      value={formData.phone}
