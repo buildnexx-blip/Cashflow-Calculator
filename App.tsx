@@ -312,22 +312,34 @@ const App: React.FC = () => {
               </InputGroup>
             </div>
             
-            <div className="space-y-3 mt-4">
-               <InputGroup label="Mgmt Fee" subLabel="%">
-                 <NumberInput suffix="%" value={inputs.managementFeePercent} onChange={(e) => handleInputChange('managementFeePercent', Number(e.target.value))} />
-               </InputGroup>
-               <InputGroup label="Council Rates (Yearly)">
-                 <NumberInput prefix="$" value={inputs.councilRates} onChange={(e) => handleInputChange('councilRates', Number(e.target.value))} />
-               </InputGroup>
-               <InputGroup label="Insurance (Yearly)">
-                 <NumberInput prefix="$" value={inputs.insurance} onChange={(e) => handleInputChange('insurance', Number(e.target.value))} />
-               </InputGroup>
-               <InputGroup label="Repairs & Maint (Yearly)">
-                 <NumberInput prefix="$" value={inputs.repairsMaintenance} onChange={(e) => handleInputChange('repairsMaintenance', Number(e.target.value))} />
-               </InputGroup>
-               <InputGroup label="Body Corporate (Yearly)">
-                 <NumberInput prefix="$" value={inputs.bodyCorp} onChange={(e) => handleInputChange('bodyCorp', Number(e.target.value))} />
-               </InputGroup>
+            <div className="my-4 border-t border-gray-100 pt-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Operating Expenses (Annual)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                 <InputGroup label="Mgmt Fee" subLabel="%">
+                   <NumberInput suffix="%" value={inputs.managementFeePercent} onChange={(e) => handleInputChange('managementFeePercent', Number(e.target.value))} />
+                 </InputGroup>
+                 <InputGroup label="Council Rates">
+                   <NumberInput prefix="$" value={inputs.councilRates} onChange={(e) => handleInputChange('councilRates', Number(e.target.value))} />
+                 </InputGroup>
+                 
+                 <InputGroup label="Insurance">
+                   <NumberInput prefix="$" value={inputs.insurance} onChange={(e) => handleInputChange('insurance', Number(e.target.value))} />
+                 </InputGroup>
+                 <InputGroup label="Repairs & Maint">
+                   <NumberInput prefix="$" value={inputs.repairsMaintenance} onChange={(e) => handleInputChange('repairsMaintenance', Number(e.target.value))} />
+                 </InputGroup>
+                 
+                 <InputGroup label="Body Corporate">
+                   <NumberInput prefix="$" value={inputs.bodyCorp} onChange={(e) => handleInputChange('bodyCorp', Number(e.target.value))} />
+                 </InputGroup>
+                 <InputGroup label="Land Tax">
+                   <NumberInput prefix="$" value={inputs.landTax} onChange={(e) => handleInputChange('landTax', Number(e.target.value))} />
+                 </InputGroup>
+                 
+                 <InputGroup label="Misc / Other" className="col-span-2">
+                   <NumberInput prefix="$" value={inputs.otherExpenses} onChange={(e) => handleInputChange('otherExpenses', Number(e.target.value))} />
+                 </InputGroup>
+              </div>
             </div>
           </section>
 
@@ -457,6 +469,7 @@ const App: React.FC = () => {
                     <TableRow label="Repairs & Maintenance" value={inputs.repairsMaintenance} />
                     {inputs.landTax > 0 && <TableRow label="Land Tax" value={inputs.landTax} />}
                     {inputs.bodyCorp > 0 && <TableRow label="Body Corporate" value={inputs.bodyCorp} />}
+                    {inputs.otherExpenses > 0 && <TableRow label="Other Expenses" value={inputs.otherExpenses} />}
                     
                     <tr className="border-t-2 border-[#C6A672]">
                       <td className="px-4 py-4 font-bold text-lg text-[#064E2C]">Net Cashflow</td>
