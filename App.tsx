@@ -535,7 +535,7 @@ const App: React.FC = () => {
             positiveCashflowYear={results.positiveCashflowYear} 
           />
 
-          {/* PROJECTION TABLE (Short Term) */}
+          {/* PROJECTION TABLE (Short Term) - ADDING MONTHLY COL */}
            <div className="bg-white rounded-[24px] p-6 border border-[#C6A672]/30">
             <h3 className="text-lg font-serif font-semibold text-[#064E2C] mb-4">10 Year Forecast</h3>
             <div className="overflow-x-auto">
@@ -548,6 +548,7 @@ const App: React.FC = () => {
                       <th className="px-4 py-3">Equity</th>
                       <th className="px-4 py-3">Rent (Wk)</th>
                       <th className="px-4 py-3">CF (Wk)</th>
+                      <th className="px-4 py-3">CF (Mth)</th>
                       <th className="px-4 py-3 text-right rounded-r-lg">CF (Yr)</th>
                     </tr>
                   </thead>
@@ -561,6 +562,9 @@ const App: React.FC = () => {
                         <td className="px-4 py-3 text-gray-700">${Math.round(p.weeklyRent).toLocaleString()}</td>
                         <td className={`px-4 py-3 font-medium ${p.netCashflow > 0 ? 'text-green-600' : 'text-red-500'}`}>
                            ${Math.round(p.netCashflow / 52).toLocaleString()}
+                        </td>
+                         <td className={`px-4 py-3 font-medium ${p.netCashflow > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                           ${Math.round(p.netCashflow / 12).toLocaleString()}
                         </td>
                         <td className={`px-4 py-3 text-right font-semibold ${p.netCashflow > 0 ? 'text-green-600' : 'text-red-500'}`}>
                           ${Math.round(p.netCashflow).toLocaleString()}
@@ -754,9 +758,15 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
                            
                            <tr><td colSpan={3} className="py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Expenses</td></tr>
                            
-                           {/* Expenses Loop for PDF */}
+                           {/* Mortgage Repayments - EXPLICITLY ADDED TO PDF GRID */}
+                           <tr className="border-b border-gray-100">
+                                <td className="py-1 text-gray-700">Mortgage Repayments</td>
+                                <td className="py-1 text-right text-gray-500">${Math.round(results.firstYearCashflow.mortgageRepayments / 12).toLocaleString()}</td>
+                                <td className="py-1 text-right font-medium">${Math.round(results.firstYearCashflow.mortgageRepayments).toLocaleString()}</td>
+                           </tr>
+                           
+                           {/* Other Expenses Loop for PDF */}
                            {[
-                                ['Mortgage Repayments', results.firstYearCashflow.mortgageRepayments],
                                 ['Mgmt Fees', results.firstYearCashflow.managementFees],
                                 ['Council Rates', inputs.councilRates],
                                 ['Insurance', inputs.insurance],
@@ -809,7 +819,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
                />
             </div>
 
-            {/* Full Projection Table */}
+            {/* Full Projection Table - ADDED MONTHLY COL */}
             <div className="mb-6">
                <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">10 Year Projection</h3>
                <table className="w-full text-xs text-left">
@@ -820,6 +830,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
                         <th className="p-2">Loan</th>
                         <th className="p-2">Equity</th>
                         <th className="p-2">Rent (Wk)</th>
+                        <th className="p-2">CF (Mth)</th>
                         <th className="p-2 text-right">Cashflow (Yr)</th>
                      </tr>
                   </thead>
@@ -831,6 +842,9 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
                            <td className="p-2 text-gray-500">${Math.round(p.loanBalance).toLocaleString()}</td>
                            <td className="p-2 font-medium text-green-700">${Math.round(p.equity).toLocaleString()}</td>
                            <td className="p-2">${Math.round(p.weeklyRent).toLocaleString()}</td>
+                           <td className={`p-2 font-bold ${p.netCashflow > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                              ${Math.round(p.netCashflow / 12).toLocaleString()}
+                           </td>
                            <td className={`p-2 text-right font-bold ${p.netCashflow > 0 ? 'text-green-600' : 'text-red-500'}`}>
                               ${Math.round(p.netCashflow).toLocaleString()}
                            </td>
