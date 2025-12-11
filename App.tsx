@@ -654,7 +654,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
             {/* KPIs */}
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-8">
                <h3 className="font-serif font-bold text-[#064E2C] mb-4">Key Performance Indicators</h3>
-               <div className="grid grid-cols-4 gap-4">
+               <div className="grid grid-cols-5 gap-4">
                   <div className="bg-white p-4 rounded shadow-sm text-center">
                      <div className="text-xs text-gray-500 uppercase">Gross Yield</div>
                      <div className="text-xl font-bold text-[#064E2C]">{((results.firstYearCashflow.effectiveGrossRent / inputs.purchasePrice) * 100).toFixed(2)}%</div>
@@ -663,6 +663,12 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
                      <div className="text-xs text-gray-500 uppercase">Cashflow (Weekly)</div>
                      <div className={`text-xl font-bold ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
                         ${Math.round(results.firstYearCashflow.netCashflow / 52).toLocaleString()}
+                     </div>
+                  </div>
+                  <div className="bg-white p-4 rounded shadow-sm text-center">
+                     <div className="text-xs text-gray-500 uppercase">Cashflow (Monthly)</div>
+                     <div className={`text-xl font-bold ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
+                        ${Math.round(results.firstYearCashflow.netCashflow / 12).toLocaleString()}
                      </div>
                   </div>
                   <div className="bg-white p-4 rounded shadow-sm text-center">
