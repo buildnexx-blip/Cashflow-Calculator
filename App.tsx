@@ -596,7 +596,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
    return (
       <>
       {/* PAGE 1: OVERVIEW & CASHFLOW */}
-      <div id="print-page-1" className="w-[900px] h-[1272px] bg-white p-10 font-sans text-gray-800 flex flex-col justify-between">
+      <div id="print-page-1" className="w-[900px] h-[1272px] bg-white p-8 font-sans text-gray-800 flex flex-col justify-between">
          <div>
             {/* Print Header */}
             <div className="border-b-2 border-[#064E2C] pb-6 flex justify-between items-end mb-8">
@@ -717,16 +717,16 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
       </div>
 
       {/* PAGE 2: CHARTS & PROJECTIONS */}
-      <div id="print-page-2" className="w-[900px] h-[1272px] bg-white p-10 font-sans text-gray-800 flex flex-col justify-between">
+      <div id="print-page-2" className="w-[900px] h-[1272px] bg-white p-8 font-sans text-gray-800 flex flex-col justify-between">
          <div>
             {/* Small Header Context */}
-            <div className="border-b border-gray-200 pb-4 mb-8 flex justify-between items-end">
+            <div className="border-b border-gray-200 pb-4 mb-6 flex justify-between items-end">
                <h3 className="text-xl font-serif font-bold text-[#064E2C]">Projections & Forecast</h3>
                <span className="text-sm text-gray-400">Page 2</span>
             </div>
 
             {/* Chart Section */}
-            <div className="mb-10">
+            <div className="mb-6">
                <ProjectionChart 
                   data={results.projections} 
                   positiveCashflowYear={results.positiveCashflowYear} 
@@ -735,7 +735,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
             </div>
 
             {/* Full Projection Table */}
-            <div className="mb-10">
+            <div className="mb-6">
                <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">10 Year Projection</h3>
                <table className="w-full text-xs text-left">
                   <thead className="bg-[#064E2C] text-white">
@@ -767,7 +767,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
          </div>
          
          {/* Extended Disclaimer for PDF - Reduced Font Size for Printing */}
-         <div className="bg-gray-50 p-4 rounded text-[8px] text-gray-400 leading-tight border-t border-gray-200">
+         <div className="bg-gray-50 p-4 rounded text-[7px] text-gray-400 leading-tight border-t border-gray-200">
             {DISCLAIMER_TEXT}
          </div>
       </div>
@@ -865,13 +865,25 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                <input type="hidden" name="actionType" value={ZOHO_CONFIG.actionType} />
                <input type="hidden" name="returnURL" value={ZOHO_CONFIG.returnURL} />
                
-               {/* Standard Hidden Fields for Lead Source/Description Backup */}
-               <input type="hidden" name="Lead Source" value="Web Calculator" />
+               {/* --- UPDATED HIDDEN FIELDS TO MATCH SCREENSHOT --- */}
+               {/* Lead Source: Default to Digital Marketing */}
+               <input type="hidden" name="Lead Source" value="Digital Marketing" />
+               
+               {/* Lead Source Details: Default to Direct / Website */}
+               <input type="hidden" name="Lead Source Details" value="Direct / Website" />
+               
+               {/* Lead Status: Default to To Be Contacted */}
+               <input type="hidden" name="Lead Status" value="To Be Contacted" />
+               
+               {/* Backup Description */}
                <input 
                   type="hidden" 
                   name="Description" 
                   value={`Goal: ${formData.purchaseType} - User generated a cashflow analysis PDF.`} 
                />
+               
+               {/* Backup Phone Field (Zoho sometimes requires 'Phone' vs 'Mobile') */}
+               <input type="hidden" name="Phone" value={formData.phone} />
 
                {/* FIRST NAME */}
                <div>
@@ -917,7 +929,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone / Mobile</label>
                   <input 
                      required
-                     name="Mobile" // Changed from 'Phone' to 'Mobile' for better Zoho compatibility
+                     name="Mobile" // Primary mapped to Mobile
                      type="tel" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
                      value={formData.phone}
@@ -925,12 +937,11 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                   />
                </div>
                
-               {/* TYPE OF PURCHASE (LEADCF2) */}
+               {/* TYPE OF PURCHASE (UI ONLY) */}
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type of Purchase</label>
                   <div className="relative">
                     <select 
-                      name="LEADCF2"
                       value={formData.purchaseType}
                       onChange={(e) => setFormData({...formData, purchaseType: e.target.value})}
                       className="w-full rounded-full border border-gray-300 px-4 py-2 appearance-none focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none bg-white"
@@ -1003,7 +1014,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
       </div>
     </div>
   );
-}
+};
 
 // Helper Components for App.tsx
 
