@@ -889,7 +889,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input 
-                     required
                      name="First Name" 
                      type="text" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
@@ -898,7 +897,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                   />
                </div>
 
-               {/* LAST NAME */}
+               {/* LAST NAME (MANDATORY) */}
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                   <input 
@@ -915,7 +914,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                   <input 
-                     required
                      name="Email"
                      type="email" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
@@ -928,7 +926,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone / Mobile</label>
                   <input 
-                     required
                      name="Mobile" // Primary mapped to Mobile
                      type="tel" 
                      className="w-full rounded-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-[#064E2C] focus:border-transparent outline-none"
