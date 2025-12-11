@@ -390,8 +390,8 @@ const App: React.FC = () => {
         {/* RIGHT COLUMN: RESULTS */}
         <div className="lg:col-span-8 space-y-6" id="results-panel">
           
-          {/* KPI TILES */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* KPI TILES - UPDATED TO INCLUDE MONTHLY */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <KPITile 
                label="Gross Yield" 
                value={`${((results.firstYearCashflow.effectiveGrossRent / inputs.purchasePrice) * 100).toFixed(2)}%`}
@@ -401,6 +401,12 @@ const App: React.FC = () => {
                label="Net Cashflow" 
                value={`$${Math.round(results.firstYearCashflow.netCashflow / 52).toLocaleString()}`}
                subtext="Per Week"
+               highlight={results.firstYearCashflow.netCashflow > 0}
+            />
+             <KPITile 
+               label="Net Cashflow" 
+               value={`$${Math.round(results.firstYearCashflow.netCashflow / 12).toLocaleString()}`}
+               subtext="Per Month"
                highlight={results.firstYearCashflow.netCashflow > 0}
             />
             <KPITile 
@@ -445,7 +451,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* CURRENT CASHFLOW BREAKDOWN */}
+          {/* CURRENT CASHFLOW BREAKDOWN - UPDATED WITH MONTHLY COLUMN */}
           <div className="bg-white rounded-[24px] p-6 border border-[#C6A672]/30">
             <h3 className="text-lg font-serif font-semibold text-[#064E2C] mb-4">Current Cashflow Position</h3>
             <div className="overflow-x-auto">
@@ -453,36 +459,67 @@ const App: React.FC = () => {
                   <thead className="bg-[#064E2C] text-white">
                     <tr>
                       <th className="px-4 py-2 rounded-l-lg">Item</th>
-                      <th className="px-4 py-2 text-right rounded-r-lg">Annual Amount</th>
+                      <th className="px-4 py-2 text-right">Monthly</th>
+                      <th className="px-4 py-2 text-right rounded-r-lg">Annual</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    <TableRow label="Loan Amount" value={results.loanAmount} />
-                    <TableRow label="Gross Rental Income" value={results.firstYearCashflow.potentialGrossRent} />
+                    <tr className="border-b border-gray-50 last:border-0">
+                        <td className="px-4 py-3 text-gray-700">Loan Amount</td>
+                        <td className="px-4 py-3 text-right text-gray-500">-</td>
+                        <td className="px-4 py-3 text-right font-medium">${Math.round(results.loanAmount).toLocaleString()}</td>
+                    </tr>
+                    <tr className="border-b border-gray-50 last:border-0">
+                        <td className="px-4 py-3 text-gray-700">Gross Rental Income</td>
+                        <td className="px-4 py-3 text-right text-gray-500">${Math.round(results.firstYearCashflow.potentialGrossRent / 12).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-medium">${Math.round(results.firstYearCashflow.potentialGrossRent).toLocaleString()}</td>
+                    </tr>
                     <tr className="border-b border-gray-50 text-gray-500 italic">
                       <td className="px-4 py-3 pl-8">Less: Vacancy ({inputs.vacancyWeeks} weeks)</td>
+                      <td className="px-4 py-3 text-right">-${Math.round(results.firstYearCashflow.vacancyLoss / 12).toLocaleString()}</td>
                       <td className="px-4 py-3 text-right">-${Math.round(results.firstYearCashflow.vacancyLoss).toLocaleString()}</td>
                     </tr>
                     <tr className="bg-[#FFFCED]">
                       <td className="px-4 py-3 font-semibold text-[#064E2C]">Effective Gross Rent</td>
+                      <td className="px-4 py-3 text-right font-semibold text-[#064E2C]">${Math.round(results.firstYearCashflow.effectiveGrossRent / 12).toLocaleString()}</td>
                       <td className="px-4 py-3 text-right font-semibold text-[#064E2C]">${Math.round(results.firstYearCashflow.effectiveGrossRent).toLocaleString()}</td>
                     </tr>
                     
                     <tr className="border-b border-gray-50 mt-2">
                        <td className="px-4 py-3 font-semibold text-gray-700 pt-6">Expenses</td>
                        <td className="px-4 py-3 pt-6"></td>
+                       <td className="px-4 py-3 pt-6"></td>
                     </tr>
-                    <TableRow label="Mortgage Repayments" value={results.firstYearCashflow.mortgageRepayments} />
-                    <TableRow label="Property Management" value={results.firstYearCashflow.managementFees} />
-                    <TableRow label="Council Rates" value={inputs.councilRates} />
-                    <TableRow label="Insurance" value={inputs.insurance} />
-                    <TableRow label="Repairs & Maintenance" value={inputs.repairsMaintenance} />
-                    {inputs.landTax > 0 && <TableRow label="Land Tax" value={inputs.landTax} />}
-                    {inputs.bodyCorp > 0 && <TableRow label="Body Corporate" value={inputs.bodyCorp} />}
-                    {inputs.otherExpenses > 0 && <TableRow label="Other Expenses" value={inputs.otherExpenses} />}
+                    
+                    <tr className="border-b border-gray-50 last:border-0">
+                        <td className="px-4 py-3 text-gray-700">Mortgage Repayments</td>
+                        <td className="px-4 py-3 text-right text-gray-500">${Math.round(results.firstYearCashflow.mortgageRepayments / 12).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-medium">${Math.round(results.firstYearCashflow.mortgageRepayments).toLocaleString()}</td>
+                    </tr>
+
+                    {[
+                        ['Property Management', results.firstYearCashflow.managementFees],
+                        ['Council Rates', inputs.councilRates],
+                        ['Insurance', inputs.insurance],
+                        ['Repairs & Maintenance', inputs.repairsMaintenance],
+                        ['Land Tax', inputs.landTax],
+                        ['Body Corporate', inputs.bodyCorp],
+                        ['Other Expenses', inputs.otherExpenses]
+                    ].map(([label, val]) => (
+                        (val as number) > 0 || (label === 'Property Management') ? (
+                            <tr key={label as string} className="border-b border-gray-50 last:border-0">
+                                <td className="px-4 py-3 text-gray-700">{label}</td>
+                                <td className="px-4 py-3 text-right text-gray-500">${Math.round((val as number) / 12).toLocaleString()}</td>
+                                <td className="px-4 py-3 text-right font-medium">${Math.round(val as number).toLocaleString()}</td>
+                            </tr>
+                        ) : null
+                    ))}
                     
                     <tr className="border-t-2 border-[#C6A672]">
                       <td className="px-4 py-4 font-bold text-lg text-[#064E2C]">Net Cashflow</td>
+                      <td className={`px-4 py-4 text-right font-bold text-lg ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
+                        ${Math.round(results.firstYearCashflow.netCashflow / 12).toLocaleString()}
+                      </td>
                       <td className={`px-4 py-4 text-right font-bold text-lg ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
                         ${Math.round(results.firstYearCashflow.netCashflow).toLocaleString()}
                       </td>
@@ -675,35 +712,67 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult }> 
                   </div>
                </div>
 
-               {/* Column 2: Detailed Cashflow */}
+               {/* Column 2: Detailed Cashflow - UPDATED WITH MONTHLY */}
                <div className="space-y-6">
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-full">
                      <h3 className="font-serif font-bold text-[#064E2C] mb-3 border-b border-gray-200 pb-2">Current Cashflow Position</h3>
                      <table className="w-full text-sm">
+                        <thead className="text-gray-500 text-xs border-b border-gray-200">
+                           <tr>
+                              <th className="py-1 text-left font-normal">Item</th>
+                              <th className="py-1 text-right font-normal">Monthly</th>
+                              <th className="py-1 text-right font-normal">Annual</th>
+                           </tr>
+                        </thead>
                         <tbody>
-                           <TableRow label="Gross Rental Income" value={results.firstYearCashflow.potentialGrossRent} />
-                            <tr className="text-gray-500 italic text-xs">
+                            {/* Gross Rent */}
+                           <tr className="border-b border-gray-100">
+                               <td className="py-2 text-gray-700">Gross Rental Income</td>
+                               <td className="py-2 text-right text-gray-500">${Math.round(results.firstYearCashflow.potentialGrossRent / 12).toLocaleString()}</td>
+                               <td className="py-2 text-right font-medium">${Math.round(results.firstYearCashflow.potentialGrossRent).toLocaleString()}</td>
+                           </tr>
+                           
+                           {/* Vacancy */}
+                            <tr className="text-gray-500 italic text-xs border-b border-gray-100">
                               <td className="pl-4 py-1">Less: Vacancy ({inputs.vacancyWeeks} wks)</td>
+                              <td className="text-right py-1">-${Math.round(results.firstYearCashflow.vacancyLoss / 12).toLocaleString()}</td>
                               <td className="text-right py-1">-${Math.round(results.firstYearCashflow.vacancyLoss).toLocaleString()}</td>
                            </tr>
+                           
+                           {/* Effective Rent */}
                            <tr className="font-semibold text-[#064E2C] bg-[#FFFCED]">
                               <td className="py-2 pl-2">Effective Gross Rent</td>
+                              <td className="py-2 text-right">${Math.round(results.firstYearCashflow.effectiveGrossRent / 12).toLocaleString()}</td>
                               <td className="py-2 pr-2 text-right">${Math.round(results.firstYearCashflow.effectiveGrossRent).toLocaleString()}</td>
                            </tr>
                            
-                           <tr><td colSpan={2} className="py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Expenses</td></tr>
+                           <tr><td colSpan={3} className="py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Expenses</td></tr>
                            
-                           <TableRow label="Mortgage Repayments" value={results.firstYearCashflow.mortgageRepayments} />
-                           <TableRow label="Mgmt Fees" value={results.firstYearCashflow.managementFees} />
-                           <TableRow label="Council Rates" value={inputs.councilRates} />
-                           <TableRow label="Insurance" value={inputs.insurance} />
-                           <TableRow label="Repairs & Maint" value={inputs.repairsMaintenance} />
-                           {inputs.landTax > 0 && <TableRow label="Land Tax" value={inputs.landTax} />}
-                           {inputs.bodyCorp > 0 && <TableRow label="Body Corporate" value={inputs.bodyCorp} />}
-                           {inputs.otherExpenses > 0 && <TableRow label="Other Expenses" value={inputs.otherExpenses} />}
+                           {/* Expenses Loop for PDF */}
+                           {[
+                                ['Mortgage Repayments', results.firstYearCashflow.mortgageRepayments],
+                                ['Mgmt Fees', results.firstYearCashflow.managementFees],
+                                ['Council Rates', inputs.councilRates],
+                                ['Insurance', inputs.insurance],
+                                ['Repairs & Maint', inputs.repairsMaintenance],
+                                ['Land Tax', inputs.landTax],
+                                ['Body Corporate', inputs.bodyCorp],
+                                ['Other Expenses', inputs.otherExpenses]
+                            ].map(([label, val]) => (
+                                (val as number) > 0 ? (
+                                    <tr key={label as string} className="border-b border-gray-100">
+                                        <td className="py-1 text-gray-700">{label}</td>
+                                        <td className="py-1 text-right text-gray-500">${Math.round((val as number) / 12).toLocaleString()}</td>
+                                        <td className="py-1 text-right font-medium">${Math.round(val as number).toLocaleString()}</td>
+                                    </tr>
+                                ) : null
+                            ))}
 
                            <tr className="font-bold text-[#064E2C] border-t-2 border-[#C6A672] text-base">
                               <td className="py-3">Net Cashflow</td>
+                              <td className={`py-3 text-right ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
+                                 ${Math.round(results.firstYearCashflow.netCashflow / 12).toLocaleString()}
+                              </td>
                               <td className={`py-3 text-right ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
                                  ${Math.round(results.firstYearCashflow.netCashflow).toLocaleString()}
                               </td>
