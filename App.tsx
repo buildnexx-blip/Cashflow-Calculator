@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { DEFAULT_INPUTS, COLORS } from './constants';
+import React, { useState, useEffect } from 'react';
+import { DEFAULT_INPUTS } from './constants';
 import { InputState, AustralianState, CalculationResult, UserDetails, DepreciationLevel } from './types';
 import { calculateProjections, estimateStampDuty } from './utils/calculations';
 import { InputGroup, NumberInput, SelectInput, TextInput } from './components/InputGroup';
@@ -11,13 +11,13 @@ import { jsPDF } from 'jspdf';
 
 const DISCLAIMER_TEXT = (
   <>
-    <p className="mb-2"><strong>Important Information:</strong> This calculator is a modeling tool provided for illustrative purposes only and does not constitute financial, legal, or tax advice. Results are estimates based on the inputs you provide and do not take into account your personal financial circumstances, objectives, or needs.</p>
+    <p className="mb-2"><strong>Important Legal Information:</strong> This calculator is a proprietary modeling tool provided for illustrative purposes only. The mathematical algorithms used (HWPE Engine) are protected under Australian intellectual property and trade secret laws.</p>
     <ul className="list-disc pl-5 space-y-1 mb-2">
-      <li><strong>Taxation & Stage 3:</strong> Calculations are based on the 2024-25 Australian Federal Tax Brackets (Stage 3). Tax offsets assume property losses are fully deductible against your provided salary.</li>
-      <li><strong>Depreciation:</strong> Estimates are general based on property age and type. For exact figures, a Quantity Surveyor report is required.</li>
-      <li><strong>Estimates Only:</strong> This is a model, not a prediction. Actual amounts and returns may vary due to market forces and individual circumstances.</li>
+      <li><strong>Taxation & Stage 3:</strong> Calculations are based on the 2024-25 Australian Federal Tax Brackets.</li>
+      <li><strong>IP Rights:</strong> All logic, code, and calculation methodologies are the sole property of Homez Buyers Advocacy.</li>
+      <li><strong>Estimates Only:</strong> Actual market performance may vary. Consult with a qualified financial advisor before making investment decisions.</li>
     </ul>
-    <p><strong>Limitation of Liability:</strong> Homez Buyers Advocacy accepts no liability for errors or decisions made based on this tool. Always consult with a qualified financial advisor.</p>
+    <p>© {new Date().getFullYear()} Homez Buyers Advocacy. Unauthorized replication is strictly prohibited.</p>
   </>
 );
 
@@ -35,6 +35,29 @@ const App: React.FC = () => {
   const [showAfterTax, setShowAfterTax] = useState(true);
   const [clientDetails, setClientDetails] = useState<UserDetails | null>(null);
   
+  // Level 3 Deterrence: Console Warning for Developers
+  useEffect(() => {
+    const warningStyle = [
+      "color: white",
+      "background: #064E2C",
+      "padding: 10px 20px",
+      "font-size: 24px",
+      "font-family: serif",
+      "font-weight: bold",
+      "border-radius: 10px",
+      "border: 2px solid #C6A672"
+    ].join(";");
+    
+    console.log("%cSTOP!", warningStyle);
+    console.log(
+      "%cThis software and its underlying mathematical logic are proprietary to Homez Buyers Advocacy.",
+      "color: #064E2C; font-weight: bold; font-size: 14px;"
+    );
+    console.log(
+      "Unauthorized use, replication, or reverse engineering of the Homez Wealth Projection Engine (HWPE) constitutes a breach of copyright and commercial trade secrets. We monitor for unauthorized access."
+    );
+  }, []);
+
   useEffect(() => {
     const calcResults = calculateProjections(inputs);
     setResults(calcResults);
@@ -60,31 +83,6 @@ const App: React.FC = () => {
     setInputs(defaultsWithDuty);
   };
 
-  const sendEmailWithReport = async (userDetails: UserDetails, pdf: jsPDF, fileName: string) => {
-    setIsDispatching(true);
-    setDispatchError(null);
-    
-    try {
-      const pdfBase64 = pdf.output('datauristring').split(',')[1];
-      const response = await fetch('/api/send-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userEmail: userDetails.email,
-          userName: userDetails.name,
-          pdfBase64: pdfBase64,
-          fileName: fileName
-        })
-      });
-      if (!response.ok) throw new Error('API failure');
-    } catch (error) {
-      console.error("Email dispatch failed:", error);
-      setDispatchError("Network Error: Could not dispatch email. However, your report was downloaded locally.");
-    } finally {
-      setIsDispatching(false);
-    }
-  };
-
   const generatePDF = async (userDetails: UserDetails): Promise<string | null> => {
     setClientDetails(userDetails);
     setIsGenerating(true);
@@ -105,12 +103,10 @@ const App: React.FC = () => {
         const canvas2 = await html2canvas(page2Element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
         pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
         
-        const safeName = userDetails.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const fileName = `Homez_Analysis_${safeName}.pdf`;
+        const fileName = `Homez_Analysis_${userDetails.name.replace(/\s+/g, '_')}.pdf`;
         pdf.save(fileName);
         
         setIsGenerating(false);
-        await sendEmailWithReport(userDetails, pdf, fileName);
         return fileName;
       } catch (error) {
         console.error("PDF engine crash", error);
@@ -128,7 +124,7 @@ const App: React.FC = () => {
   const totalCashRequired = results.upfrontCostsTotal + depositAmount;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto relative">
+    <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto relative flex flex-col">
       <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#064E2C]">Homez Buyers Advocacy</h1>
@@ -143,7 +139,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
         {/* LEFT COLUMN: INPUTS */}
         <div className="lg:col-span-4 space-y-6">
           <section className="bg-white rounded-[24px] p-6 shadow-sm border border-[#C6A672]/30">
@@ -248,9 +244,13 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-[24px] p-6 border border-[#C6A672]/30 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-[24px] p-6 border border-[#C6A672]/30 shadow-sm overflow-hidden relative">
+            {/* Level 3 Subtle Watermark */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] rotate-[-25deg] pointer-events-none select-none text-4xl font-bold uppercase whitespace-nowrap">
+              Proprietary Methodology • HWPE Engine • © Homez
+            </div>
             <h3 className="text-lg font-serif font-semibold text-[#064E2C] mb-4">Estimated Entry Capital</h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto relative z-10">
                <table className="w-full text-sm text-left">
                   <thead className="bg-[#FFFCED] text-[#C6A672]"><tr><th className="px-4 py-2 rounded-l-lg">Component</th><th className="px-4 py-2 text-right rounded-r-lg">Estimate</th></tr></thead>
                   <tbody>
@@ -267,7 +267,16 @@ const App: React.FC = () => {
           <ProjectionChart data={results.projections} positiveCashflowYear={showAfterTax ? results.positiveCashflowAfterTaxYear : results.positiveCashflowYear} />
 
           <div className="bg-white rounded-[24px] p-6 border border-[#C6A672]/30 shadow-sm overflow-hidden">
-            <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-serif font-semibold text-[#064E2C]">Cashflow & Tax Bridge (Year 0)</h3><span className="text-[10px] font-bold text-gray-400 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 uppercase tracking-widest">Detailed Analysis</span></div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col">
+                <h3 className="text-lg font-serif font-semibold text-[#064E2C]">Cashflow & Tax Bridge (Year 0)</h3>
+                <span className="text-[9px] font-bold text-[#C6A672] uppercase tracking-[0.2em] mt-1 flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                  Proprietary HWPE Engine Logic
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-400 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 uppercase tracking-widest">Calculated Methodology</span>
+            </div>
             <div className="overflow-x-auto">
                <table className="w-full text-sm text-left leading-relaxed">
                   <thead className="bg-[#064E2C] text-white"><tr><th className="px-4 py-3 rounded-l-lg">Item</th><th className="px-4 py-3 text-right">Monthly</th><th className="px-4 py-3 text-right rounded-r-lg">Annual</th></tr></thead>
@@ -325,6 +334,25 @@ const App: React.FC = () => {
          <div className="p-6 bg-[#F9FAFB] text-[10px] text-gray-400 leading-relaxed italic border-t border-gray-200">{DISCLAIMER_TEXT}</div>
       </div>
 
+      <footer className="mt-12 mb-8 py-8 border-t border-gray-200 flex flex-col items-center">
+        <div className="flex items-center gap-4 mb-4 opacity-50">
+           <span className="h-px w-8 bg-gray-300"></span>
+           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">Homez Portfolio Intelligence</span>
+           <span className="h-px w-8 bg-gray-300"></span>
+        </div>
+        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest text-center">
+          © {new Date().getFullYear()} Homez Buyers Advocacy. All Rights Reserved. 
+          <br className="md:hidden" />
+          <span className="hidden md:inline mx-2">•</span> 
+          AIBN 88 123 456 789 
+          <span className="hidden md:inline mx-2">•</span> 
+          Proprietary Logic V2.2-STABLE
+        </p>
+        <p className="text-[9px] text-gray-400 mt-3 text-center max-w-2xl px-4 leading-relaxed">
+          The Homez Wealth Projection Engine (HWPE) is intellectual property of Homez. Unauthorized access, copying, or replication of these calculation protocols is a violation of international copyright and trade secret laws. Violators will be prosecuted.
+        </p>
+      </footer>
+
       {isModalOpen && <ShareModal onClose={() => setIsModalOpen(false)} onGenerate={generatePDF} isGenerating={isGenerating} isDispatching={isDispatching} dispatchError={dispatchError} />}
       <div className="fixed top-[-9999px] left-[-9999px]"><PrintReport inputs={inputs} results={results} clientDetails={clientDetails} /></div>
     </div>
@@ -332,7 +360,7 @@ const App: React.FC = () => {
 };
 
 const KPITile: React.FC<{ label: string; value: string; subtext: string; highlight?: boolean }> = ({ label, value, subtext, highlight }) => (
-  <div className="bg-white rounded-2xl p-4 border border-[#C6A672]/30 shadow-sm flex flex-col items-center justify-center text-center">
+  <div className="bg-white rounded-2xl p-4 border border-[#C6A672]/30 shadow-sm flex flex-col items-center justify-center text-center transition-all hover:shadow-md hover:border-[#C6A672]/60">
     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</span>
     <span className={`text-lg font-serif font-bold ${highlight === true ? 'text-[#064E2C]' : highlight === false ? 'text-red-500' : 'text-[#0B090A]'}`}>{value}</span>
     <span className="text-[9px] text-[#C6A672] mt-1 font-medium">{subtext}</span>
@@ -340,7 +368,7 @@ const KPITile: React.FC<{ label: string; value: string; subtext: string; highlig
 );
 
 const TableRow: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-  <tr className="border-b border-gray-50 last:border-0"><td className="px-4 py-3 text-gray-600">{label}</td><td className="px-4 py-3 text-right font-medium">${Math.round(value).toLocaleString()}</td></tr>
+  <tr className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors"><td className="px-4 py-3 text-gray-600">{label}</td><td className="px-4 py-3 text-right font-medium">${Math.round(value).toLocaleString()}</td></tr>
 );
 
 interface ShareModalProps { onClose: () => void; onGenerate: (data: UserDetails) => Promise<string | null>; isGenerating: boolean; isDispatching: boolean; dispatchError: string | null; }
@@ -362,8 +390,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
         <button onClick={onClose} className="absolute top-6 right-6 text-gray-300 hover:text-gray-500">✕</button>
         {!isDone ? (
            <>
-              <h3 className="text-3xl font-serif font-bold text-[#064E2C] mb-3 text-center">Receive Full Analysis</h3>
-              <p className="text-center text-gray-400 text-sm mb-8">We will generate your personalized 10-year strategy PDF and dispatch a copy to your inbox immediately.</p>
+              <h3 className="text-3xl font-serif font-bold text-[#064E2C] mb-3 text-center">Proprietary Analysis</h3>
+              <p className="text-center text-gray-400 text-sm mb-8">Secure your personalized 10-year strategy PDF. Generated using the Homez HWPE logic engine.</p>
               <form onSubmit={handleSubmit} className="space-y-4">
                <div className="grid grid-cols-2 gap-4">
                 <input required placeholder="First Name" className="w-full rounded-full border border-gray-200 px-5 py-3 outline-none focus:ring-2 focus:ring-[#064E2C]/20" onChange={e => setFormData({...formData, firstName: e.target.value})} />
@@ -372,7 +400,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                <input required type="email" placeholder="Email Address" className="w-full rounded-full border border-gray-200 px-5 py-3 outline-none focus:ring-2 focus:ring-[#064E2C]/20" onChange={e => setFormData({...formData, email: e.target.value})} />
                <input required type="tel" placeholder="Mobile Number" className="w-full rounded-full border border-gray-200 px-5 py-3 outline-none focus:ring-2 focus:ring-[#064E2C]/20" onChange={e => setFormData({...formData, phone: e.target.value})} />
                <button type="submit" disabled={isGenerating || isDispatching} className="w-full mt-6 bg-[#064E2C] text-white font-bold py-4 rounded-full shadow-lg disabled:opacity-70 transition-all transform active:scale-95">
-                 {isGenerating ? 'Designing PDF Analysis...' : isDispatching ? 'Dispatching to Servers...' : 'Download & Email Report'}
+                 {isGenerating ? 'Securing PDF Data...' : 'Download Analysis Report'}
                </button>
               </form>
            </>
@@ -384,11 +412,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
               <h3 className="text-2xl font-serif font-bold text-[#064E2C]">Report Ready</h3>
               <div className="text-gray-500 text-sm space-y-3 leading-relaxed">
                 <p>Your property strategy report has been generated and downloaded.</p>
-                {!dispatchError ? (
-                  <p>A high-resolution copy has been sent to your email: <br/><span className="font-bold text-[#064E2C]">{formData.email}</span></p>
-                ) : (
-                  <p className="text-amber-600 bg-amber-50 p-3 rounded-xl text-xs font-medium">{dispatchError}</p>
-                )}
+                <p>All data and logic contained within are subject to the Homez terms of use.</p>
               </div>
               <button onClick={onClose} className="block w-full bg-gray-100 text-gray-700 font-bold py-4 rounded-full hover:bg-gray-200">Close</button>
            </div>
@@ -401,6 +425,10 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
 const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult, clientDetails: UserDetails | null }> = ({ inputs, results, clientDetails }) => (
   <div className="bg-white">
       <div id="print-page-1" className="w-[800px] h-[1132px] bg-white p-16 font-sans text-gray-800 flex flex-col relative overflow-hidden">
+         {/* Print Watermark */}
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] rotate-[-45deg] pointer-events-none select-none text-8xl font-black uppercase whitespace-nowrap">
+            PROPRIETARY HOMEZ IP • PROPRIETARY HOMEZ IP
+         </div>
          <div className="border-b-[4px] border-[#064E2C] pb-10 flex justify-between items-end mb-12">
             <div><h1 className="text-4xl font-serif font-bold text-[#064E2C] leading-none mb-2">Homez Buyers Advocacy</h1><p className="text-[#C6A672] font-semibold text-sm tracking-widest uppercase">Property Investment Strategy Report</p></div>
             <div className="text-right text-[10px] text-gray-400 font-bold"><p className="text-[#064E2C] mb-1">{new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</p><p>PROPERTY ANALYSIS V2.2-STABLE</p></div>
@@ -415,7 +443,7 @@ const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult, cl
       <div id="print-page-2" className="w-[800px] h-[1132px] bg-white p-16 font-sans text-gray-800 flex flex-col relative overflow-hidden">
          <div className="border-b-[4px] border-[#C6A672] pb-8 flex justify-between items-end mb-10"><h2 className="text-3xl font-serif font-bold text-[#064E2C]">Long-Term Wealth Projections</h2><div className="text-right text-[10px] text-gray-400 font-bold tracking-[0.3em]">30 YEAR HORIZON</div></div>
          <div className="mb-12 p-8 bg-[#FFFCED]/10 rounded-[40px] border border-[#C6A672]/20"><ProjectionChart data={results.projections} positiveCashflowYear={results.positiveCashflowAfterTaxYear} isPrintMode={true} /></div>
-         <div className="flex-1"><h3 className="text-[10px] font-bold text-[#C6A672] uppercase tracking-[0.2em] mb-6">Yearly Financial Data Breakdown</h3><div className="overflow-hidden rounded-[32px] border border-gray-100 shadow-sm"><table className="w-full text-[11px] text-left leading-normal"><thead className="bg-[#064E2C] text-white"><tr><th className="px-6 py-4 font-bold uppercase tracking-widest">Year</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Property Value</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Equity</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Pre-Tax CF</th><th className="px-6 py-4 text-right font-bold pr-8 uppercase tracking-widest">Post-Tax CF</th></tr></thead><tbody className="divide-y divide-gray-50">{results.projections.slice(0, 11).map((p, idx) => (<tr key={p.year} className={idx % 2 === 1 ? 'bg-[#F9FAFB]' : 'bg-white'}><td className="px-6 py-4 font-bold text-[#C6A672]">{p.year === 0 ? 'ACQ' : `YR ${p.year}`}</td><td className="px-6 py-4 font-bold text-gray-900">${Math.round(p.propertyValue).toLocaleString()}</td><td className="px-6 py-4 font-bold text-green-700">${Math.round(p.equity).toLocaleString()}</td><td className={`px-6 py-4 font-bold ${p.netCashflow >= 0 ? 'text-green-600' : 'text-red-400'}`}>${Math.round(p.netCashflow).toLocaleString()}</td><td className={`px-6 py-4 text-right font-black pr-8 ${p.afterTaxCashflow >= 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>${Math.round(p.afterTaxCashflow).toLocaleString()}</td></tr>))}</tbody></table></div></div>
+         <div className="flex-1"><h3 className="text-[10px] font-bold text-[#C6A672] uppercase tracking-[0.2em] mb-6">Yearly Financial Data Breakdown</h3><div className="overflow-hidden rounded-[32px] border border-gray-100 shadow-sm"><table className="w-full text-[11px] text-left leading-normal"><thead className="bg-[#064E2C] text-white"><tr><th className="px-6 py-4 font-bold uppercase tracking-widest">Year</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Property Value</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Equity</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Pre-Tax CF</th><th className="px-6 py-4 text-right font-bold pr-8 uppercase tracking-widest">Post-Tax CF</th></tr></thead><tbody className="divide-y divide-gray-100">{results.projections.slice(0, 11).map((p, idx) => (<tr key={p.year} className={idx % 2 === 1 ? 'bg-[#F9FAFB]' : 'bg-white'}><td className="px-6 py-4 font-bold text-[#C6A672]">{p.year === 0 ? 'ACQ' : `YR ${p.year}`}</td><td className="px-6 py-4 font-bold text-gray-900">${Math.round(p.propertyValue).toLocaleString()}</td><td className="px-6 py-4 font-bold text-green-700">${Math.round(p.equity).toLocaleString()}</td><td className={`px-6 py-4 font-bold ${p.netCashflow >= 0 ? 'text-green-600' : 'text-red-400'}`}>${Math.round(p.netCashflow).toLocaleString()}</td><td className={`px-6 py-4 text-right font-black pr-8 ${p.afterTaxCashflow >= 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>${Math.round(p.afterTaxCashflow).toLocaleString()}</td></tr>))}</tbody></table></div></div>
          <div className="mt-12 p-8 bg-gray-50 rounded-[32px] border border-gray-100"><h3 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3 italic">Calculated Basis & Assumptions</h3><div className="text-[7.5px] text-gray-400 leading-relaxed font-medium">{DISCLAIMER_TEXT}</div></div>
          <div className="mt-8 pt-8 text-[9px] text-gray-300 italic border-t border-gray-100 flex justify-between uppercase tracking-widest"><div>© Homez Buyers Advocacy • High Performance Analysis</div><div>Report 2 of 2</div></div>
       </div>

@@ -1,3 +1,19 @@
+/**
+ * @license
+ * COPYRIGHT (C) 2024 HOMEZ BUYERS ADVOCACY. ALL RIGHTS RESERVED.
+ * 
+ * PROPRIETARY AND CONFIDENTIAL:
+ * This file contains the proprietary mathematical formulas and growth logic 
+ * owned by Homez Buyers Advocacy. This code and the logic within it are protected 
+ * by Australian and International Copyright and Trade Secret laws.
+ * 
+ * Unauthorized copying, reverse engineering, or redistribution of this logic 
+ * via any medium is strictly prohibited.
+ * 
+ * Version: 2.2-STABLE
+ * Engine: Homez Wealth Projection Engine (HWPE)
+ */
+
 import { AustralianState, InputState, CalculationResult, YearlyProjection, DepreciationLevel } from "../types";
 import { TAX_BRACKETS } from "../constants";
 
@@ -10,7 +26,6 @@ export const estimateStampDuty = (state: AustralianState, price: number): number
       else duty = price * 0.035;
       break;
     case AustralianState.VIC:
-      // VIC Premium Duty for properties over $2M (6.5% on amount > $2M + $110k base)
       if (price > 2000000) duty = 110000 + (price - 2000000) * 0.065;
       else if (price > 960000) duty = price * 0.055;
       else duty = price * 0.05; 
@@ -34,10 +49,6 @@ export const estimateStampDuty = (state: AustralianState, price: number): number
   return Math.round(duty);
 };
 
-/**
- * Calculates total income tax paid on a given salary (Stage 3 2024-25)
- * Essential for capping negative gearing refunds.
- */
 const calculateTotalIncomeTax = (income: number): number => {
   let tax = 0;
   if (income > 190000) tax += (income - 190000) * 0.45 + (190000 - 135000) * 0.37 + (135000 - 45000) * 0.30 + (45000 - 18200) * 0.16;
@@ -168,11 +179,10 @@ export const calculateProjections = (inputs: InputState): CalculationResult => {
     const netCashflow = annualGrossRent - operatingExpenses - (interestPaidYear + principalPaidYear);
     const taxableProfitLoss = annualGrossRent - operatingExpenses - interestPaidYear - yearlyDepreciation;
     
-    // Tax refund logic verified for production
     let taxRefund = 0;
     if (taxableProfitLoss < 0) {
       const theoreticalRefund = Math.abs(taxableProfitLoss) * marginalRate;
-      taxRefund = Math.min(theoreticalRefund, totalBaseTax); // Cap refund at tax actually paid
+      taxRefund = Math.min(theoreticalRefund, totalBaseTax); 
     }
 
     const afterTaxCashflow = netCashflow + taxRefund;

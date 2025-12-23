@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Homez | Capital & Rental Growth Calculator</title>
+    <meta name="copyright" content="Homez Buyers Advocacy 2024">
+    <meta name="author" content="Homez Buyers Advocacy">
+    <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +27,7 @@
         background-color: var(--color-bg);
         color: var(--color-dark);
         font-family: var(--font-sans);
+        user-select: none; /* Prevents easy text copying of the table data */
       }
       
       h1, h2, h3, h4, h5, h6 {
@@ -41,6 +45,10 @@
         background: var(--color-gold);
         border-radius: 4px;
       }
+
+      @media print {
+        .no-print { display: none; }
+      }
     </style>
   <script type="importmap">
 {
@@ -53,7 +61,8 @@
     "jspdf": "https://aistudiocdn.com/jspdf@^3.0.4",
     "vite": "https://aistudiocdn.com/vite@^7.2.7",
     "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-    "resend": "https://esm.sh/resend@^6.6.0"
+    "resend": "https://esm.sh/resend@^6.6.0",
+    "vite-plugin-javascript-obfuscator": "https://esm.sh/vite-plugin-javascript-obfuscator@^3.1.0"
   }
 }
 </script>
