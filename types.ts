@@ -9,6 +9,13 @@ export enum AustralianState {
   NT = 'NT',
 }
 
+export enum DepreciationLevel {
+  New = 'New Build (High)',
+  Recent = 'Recent / Renovated (Med)',
+  Old = 'Older Existing (Low)',
+  Manual = 'Manual Input',
+}
+
 export interface InputState {
   // Property
   propertyAddress?: string;
@@ -23,27 +30,32 @@ export interface InputState {
   interestOnlyYears: number;
 
   // Upfront Costs
-  stampDuty: number; // calculated or overridden
+  stampDuty: number; 
   buyersAgentFee: number;
   solicitorFee: number;
   buildingPestFee: number;
   otherUpfront: number;
 
-  // Income & Expenses (Annualized in logic, but input as weekly often)
+  // Income & Expenses
   weeklyRent: number;
   managementFeePercent: number;
   vacancyWeeks: number;
-  councilRates: number; // annual
-  insurance: number; // annual
-  repairsMaintenance: number; // annual
-  landTax: number; // annual
-  bodyCorp: number; // annual
-  otherExpenses: number; // annual
+  councilRates: number; 
+  insurance: number; 
+  repairsMaintenance: number; 
+  landTax: number; 
+  bodyCorp: number; 
+  otherExpenses: number; 
+
+  // Taxation & Depreciation
+  annualSalary: number;
+  depreciationLevel: DepreciationLevel;
+  manualDepreciation: number;
 
   // Projections
   capitalGrowthPercent: number;
   rentalGrowthPercent: number;
-  inflationPercent: number; // for expenses
+  inflationPercent: number; 
 }
 
 export interface YearlyProjection {
@@ -54,26 +66,34 @@ export interface YearlyProjection {
   grossRent: number;
   weeklyRent: number;
   netCashflow: number;
+  afterTaxCashflow: number; 
+  taxRefund: number;        
   totalExpenses: number;
   interestPaid: number;
   principalPaid: number;
+  depreciation: number;     
 }
 
 export interface CalculationResult {
   upfrontCostsTotal: number;
   loanAmount: number;
   lvr: number;
+  marginalTaxRate: number;
   firstYearCashflow: {
-    potentialGrossRent: number; // Rent * 52
-    vacancyLoss: number; // Rent * vacancyWeeks
-    effectiveGrossRent: number; // potential - vacancy
+    potentialGrossRent: number;
+    vacancyLoss: number;
+    effectiveGrossRent: number;
     managementFees: number;
-    otherOperatingExpenses: number; // rates, insurance, etc
+    otherOperatingExpenses: number;
     mortgageRepayments: number;
     netCashflow: number;
+    taxRefund: number;        
+    afterTaxCashflow: number; 
+    depreciation: number;     
   };
   projections: YearlyProjection[];
-  positiveCashflowYear: number | null; // The year it turns positive
+  positiveCashflowYear: number | null;
+  positiveCashflowAfterTaxYear: number | null;
 }
 
 export interface UserDetails {

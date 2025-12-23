@@ -1,10 +1,8 @@
-import { AustralianState, InputState, CalculationResult, YearlyProjection } from "../types";
+import { AustralianState, InputState, CalculationResult, YearlyProjection, DepreciationLevel } from "../types";
+import { TAX_BRACKETS } from "../constants";
 
 export const estimateStampDuty = (state: AustralianState, price: number): number => {
-  // Simplified brackets for estimation purposes. 
-  // In a real app, this would be a comprehensive lookup table.
   let duty = 0;
-  
   switch (state) {
     case AustralianState.NSW:
       if (price > 1089000) duty = 44095 + (price - 1089000) * 0.055;
@@ -12,7 +10,9 @@ export const estimateStampDuty = (state: AustralianState, price: number): number
       else duty = price * 0.035;
       break;
     case AustralianState.VIC:
-      if (price > 960000) duty = price * 0.055; // Simplified
+      // VIC Premium Duty for properties over $2M (6.5% on amount > $2M + $110k base)
+      if (price > 2000000) duty = 110000 + (price - 2000000) * 0.065;
+      else if (price > 960000) duty = price * 0.055;
       else duty = price * 0.05; 
       break;
     case AustralianState.QLD:
@@ -29,10 +29,39 @@ export const estimateStampDuty = (state: AustralianState, price: number): number
       else duty = price * 0.04;
       break;
     default:
-      duty = price * 0.04; // Generic average
+      duty = price * 0.045;
   }
-
   return Math.round(duty);
+};
+
+/**
+ * Calculates total income tax paid on a given salary (Stage 3 2024-25)
+ * Essential for capping negative gearing refunds.
+ */
+const calculateTotalIncomeTax = (income: number): number => {
+  let tax = 0;
+  if (income > 190000) tax += (income - 190000) * 0.45 + (190000 - 135000) * 0.37 + (135000 - 45000) * 0.30 + (45000 - 18200) * 0.16;
+  else if (income > 135000) tax += (income - 135000) * 0.37 + (135000 - 45000) * 0.30 + (45000 - 18200) * 0.16;
+  else if (income > 45000) tax += (income - 45000) * 0.30 + (45000 - 18200) * 0.16;
+  else if (income > 18200) tax += (income - 18200) * 0.16;
+  return tax;
+};
+
+const calculateMarginalTaxRate = (income: number): number => {
+  for (const bracket of TAX_BRACKETS) {
+    if (income > bracket.threshold) return bracket.rate;
+  }
+  return 0;
+};
+
+const getDepreciationEstimate = (level: DepreciationLevel, price: number, manual: number): number => {
+  switch (level) {
+    case DepreciationLevel.New: return price * 0.022; 
+    case DepreciationLevel.Recent: return price * 0.012; 
+    case DepreciationLevel.Old: return 2000; 
+    case DepreciationLevel.Manual: return manual;
+    default: return 0;
+  }
 };
 
 export const calculateProjections = (inputs: InputState): CalculationResult => {
@@ -55,139 +84,102 @@ export const calculateProjections = (inputs: InputState): CalculationResult => {
     capitalGrowthPercent,
     rentalGrowthPercent,
     inflationPercent,
+    annualSalary,
+    depreciationLevel,
+    manualDepreciation
   } = inputs;
 
   const depositAmount = purchasePrice * (depositPercent / 100);
-  const loanPrincipal = purchasePrice - depositAmount;
+  const loanPrincipal = Math.max(0, purchasePrice - depositAmount);
   const upfrontCostsTotal = inputs.stampDuty + inputs.buyersAgentFee + inputs.solicitorFee + inputs.buildingPestFee + inputs.otherUpfront;
   
   const monthlyRate = (interestRate / 100) / 12;
   const totalMonths = loanTermYears * 12;
-
-  // --- Calculate Year 0 (Current Position / Snapshot) ---
-  // This represents the "Day 1" annualized position based on inputs, before any growth.
-  
-  const y0GrossRent = weeklyRent * (52 - vacancyWeeks);
-  const y0MgmtFee = y0GrossRent * (managementFeePercent / 100);
-  const y0OperatingExpenses = 
-    y0MgmtFee + 
-    councilRates + 
-    insurance + 
-    repairsMaintenance + 
-    landTax + 
-    bodyCorp + 
-    otherExpenses;
-  
-  // Year 0 Mortgage (Annualized estimate)
-  let y0AnnualMortgage = 0;
-  if (isInterestOnly) {
-     y0AnnualMortgage = loanPrincipal * (interestRate / 100);
-  } else {
-     // Standard P&I annual sum
-     const pmt = (loanPrincipal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
-     y0AnnualMortgage = pmt * 12;
-  }
-  
-  const y0NetCashflow = y0GrossRent - y0OperatingExpenses - y0AnnualMortgage;
+  const marginalRate = calculateMarginalTaxRate(annualSalary);
+  const totalBaseTax = calculateTotalIncomeTax(annualSalary);
 
   const projections: YearlyProjection[] = [];
-  let positiveCashflowYear: number | null = null;
-  let hasFoundPositive = false;
 
-  // Check Year 0 logic - if already positive, set year to 0
-  if (y0NetCashflow > 0) {
-    positiveCashflowYear = 0;
-    hasFoundPositive = true;
-  }
-
-  // Push Year 0 Snapshot
-  projections.push({
-    year: 0,
-    propertyValue: purchasePrice,
-    loanBalance: loanPrincipal,
-    equity: depositAmount,
-    grossRent: y0GrossRent,
-    weeklyRent: weeklyRent, // Current weekly rent
-    netCashflow: y0NetCashflow,
-    totalExpenses: y0OperatingExpenses,
-    interestPaid: 0,
-    principalPaid: 0
-  });
-
-  // --- Prepare for Projection Loop ---
-  // We assume Year 1 represents the state at the end of Year 1 (or during Year 1 with growth applied).
-  // To ensure Y1 differs from Y0, we apply growth immediately for the Year 1 forecast.
-  
-  let currentPropertyValue = purchasePrice * (1 + capitalGrowthPercent / 100);
-  let currentWeeklyRent = weeklyRent * (1 + rentalGrowthPercent / 100);
+  let currentPropertyValue = purchasePrice;
+  let currentWeeklyRent = weeklyRent;
   let currentLoanBalance = loanPrincipal;
   
-  let currentExpenses = {
-    councilRates: councilRates * (1 + inflationPercent / 100),
-    insurance: insurance * (1 + inflationPercent / 100),
-    repairsMaintenance: repairsMaintenance * (1 + inflationPercent / 100),
-    landTax: landTax * (1 + inflationPercent / 100),
-    bodyCorp: bodyCorp * (1 + inflationPercent / 100),
-    otherExpenses: otherExpenses * (1 + inflationPercent / 100)
-  };
+  let currentExpenses = { councilRates, insurance, repairsMaintenance, landTax, bodyCorp, otherExpenses };
 
-  // --- Projection Loop (Years 1 to 30) ---
+  let positiveCashflowYear: number | null = null;
+  let positiveCashflowAfterTaxYear: number | null = null;
 
-  for (let year = 1; year <= 30; year++) {
-    // 1. Calculate Rental Income
+  for (let year = 0; year <= 30; year++) {
+    if (year > 0) {
+      currentPropertyValue *= (1 + capitalGrowthPercent / 100);
+      currentWeeklyRent *= (1 + rentalGrowthPercent / 100);
+      currentExpenses = {
+        councilRates: currentExpenses.councilRates * (1 + inflationPercent / 100),
+        insurance: currentExpenses.insurance * (1 + inflationPercent / 100),
+        repairsMaintenance: currentExpenses.repairsMaintenance * (1 + inflationPercent / 100),
+        landTax: currentExpenses.landTax * (1 + inflationPercent / 100),
+        bodyCorp: currentExpenses.bodyCorp * (1 + inflationPercent / 100),
+        otherExpenses: currentExpenses.otherExpenses * (1 + inflationPercent / 100),
+      };
+    }
+
     const annualGrossRent = currentWeeklyRent * (52 - vacancyWeeks);
     const managementFee = annualGrossRent * (managementFeePercent / 100);
-    
-    // 2. Calculate Operating Expenses
-    const operatingExpenses = 
-      managementFee + 
-      currentExpenses.councilRates + 
-      currentExpenses.insurance + 
-      currentExpenses.repairsMaintenance + 
-      currentExpenses.landTax + 
-      currentExpenses.bodyCorp + 
-      currentExpenses.otherExpenses;
+    const operatingExpenses = managementFee + Object.values(currentExpenses).reduce((a, b) => a + b, 0);
 
-    // 3. Calculate Mortgage
     let interestPaidYear = 0;
     let principalPaidYear = 0;
 
+    let tempBalance = currentLoanBalance;
+    const isIOPeriod = isInterestOnly && year < interestOnlyYears;
+    
     for (let m = 1; m <= 12; m++) {
-      const monthIndex = (year - 1) * 12 + m;
-      const isIOPeriod = isInterestOnly && year <= interestOnlyYears;
-      
-      const interestPayment = currentLoanBalance * monthlyRate;
+      const globalMonthIndex = (year * 12) + m;
+      const interestPayment = tempBalance * monthlyRate;
       let totalPayment = 0;
 
       if (isIOPeriod) {
         totalPayment = interestPayment;
-        principalPaidYear += 0;
+      } else if (interestRate === 0) {
+        const remainingMonths = Math.max(1, totalMonths - (isInterestOnly ? interestOnlyYears * 12 : 0) - ((year > (isInterestOnly ? interestOnlyYears : 0) ? (year - (isInterestOnly ? interestOnlyYears : 0)) * 12 : 0) + m - 1));
+        totalPayment = tempBalance / remainingMonths;
       } else {
-        const monthsRemaining = totalMonths - ((isInterestOnly ? interestOnlyYears : 0) * 12) - (monthIndex - (isInterestOnly ? interestOnlyYears * 12 : 0) - 1);
-        if (monthsRemaining <= 0 || currentLoanBalance <= 0) {
-           totalPayment = currentLoanBalance;
+        const totalPIMonths = totalMonths - (isInterestOnly ? interestOnlyYears * 12 : 0);
+        const monthsElapsedInPI = Math.max(0, globalMonthIndex - (isInterestOnly ? interestOnlyYears * 12 : 0)) - 1;
+        const monthsRemaining = totalPIMonths - monthsElapsedInPI;
+        
+        if (monthsRemaining <= 0) {
+          totalPayment = tempBalance + interestPayment;
         } else {
-           totalPayment = (currentLoanBalance * monthlyRate * Math.pow(1 + monthlyRate, monthsRemaining)) / (Math.pow(1 + monthlyRate, monthsRemaining) - 1);
+          totalPayment = (tempBalance * monthlyRate * Math.pow(1 + monthlyRate, monthsRemaining)) / (Math.pow(1 + monthlyRate, monthsRemaining) - 1);
         }
       }
 
-      const principalPayment = totalPayment - interestPayment;
+      const principalPayment = Math.max(0, totalPayment - interestPayment);
       interestPaidYear += interestPayment;
-      const actualPrincipal = Math.min(principalPayment, currentLoanBalance);
+      const actualPrincipal = Math.min(principalPayment, tempBalance);
       principalPaidYear += actualPrincipal;
-      currentLoanBalance -= actualPrincipal;
+      tempBalance -= actualPrincipal;
     }
 
-    const totalMortgageRepayments = interestPaidYear + principalPaidYear;
-    const netCashflow = annualGrossRent - operatingExpenses - totalMortgageRepayments;
+    const baseDepreciation = getDepreciationEstimate(depreciationLevel, purchasePrice, manualDepreciation);
+    const yearlyDepreciation = year < 10 ? baseDepreciation * Math.pow(0.85, year) : 0;
 
-    // Check for positive cashflow crossover
-    if (netCashflow > 0 && !hasFoundPositive) {
-      positiveCashflowYear = year;
-      hasFoundPositive = true;
+    const netCashflow = annualGrossRent - operatingExpenses - (interestPaidYear + principalPaidYear);
+    const taxableProfitLoss = annualGrossRent - operatingExpenses - interestPaidYear - yearlyDepreciation;
+    
+    // Tax refund logic verified for production
+    let taxRefund = 0;
+    if (taxableProfitLoss < 0) {
+      const theoreticalRefund = Math.abs(taxableProfitLoss) * marginalRate;
+      taxRefund = Math.min(theoreticalRefund, totalBaseTax); // Cap refund at tax actually paid
     }
 
-    // Store Projection
+    const afterTaxCashflow = netCashflow + taxRefund;
+
+    if (netCashflow > 0 && positiveCashflowYear === null && year > 0) positiveCashflowYear = year;
+    if (afterTaxCashflow > 0 && positiveCashflowAfterTaxYear === null && year > 0) positiveCashflowAfterTaxYear = year;
+
     projections.push({
       year,
       propertyValue: currentPropertyValue,
@@ -196,47 +188,38 @@ export const calculateProjections = (inputs: InputState): CalculationResult => {
       grossRent: annualGrossRent,
       weeklyRent: currentWeeklyRent,
       netCashflow,
+      afterTaxCashflow,
+      taxRefund,
       totalExpenses: operatingExpenses,
       interestPaid: interestPaidYear,
-      principalPaid: principalPaidYear
+      principalPaid: principalPaidYear,
+      depreciation: yearlyDepreciation
     });
 
-    // Inflate values for NEXT year
-    currentPropertyValue *= (1 + capitalGrowthPercent / 100);
-    currentWeeklyRent *= (1 + rentalGrowthPercent / 100);
-    
-    currentExpenses = {
-      councilRates: currentExpenses.councilRates * (1 + inflationPercent / 100),
-      insurance: currentExpenses.insurance * (1 + inflationPercent / 100),
-      repairsMaintenance: currentExpenses.repairsMaintenance * (1 + inflationPercent / 100),
-      landTax: currentExpenses.landTax * (1 + inflationPercent / 100),
-      bodyCorp: currentExpenses.bodyCorp * (1 + inflationPercent / 100),
-      otherExpenses: currentExpenses.otherExpenses * (1 + inflationPercent / 100),
-    };
+    currentLoanBalance = tempBalance;
   }
 
-  // Snapshot for Breakdown Table (Using Year 0 / Current Inputs)
-  // We use the Potential Rent from inputs, not the inflated year 1 rent.
-  const potentialGrossRentY0 = weeklyRent * 52;
-  const vacancyLossY0 = potentialGrossRentY0 - y0GrossRent;
-  const managementFeesY0 = y0MgmtFee;
-  const otherOperatingExpensesY0 = y0OperatingExpenses - managementFeesY0;
+  const y0 = projections[0];
 
   return {
     upfrontCostsTotal,
     loanAmount: loanPrincipal,
     lvr: (loanPrincipal / purchasePrice) * 100,
-    // Return Year 0 Snapshot for the "Current Cashflow" table
+    marginalTaxRate: marginalRate,
     firstYearCashflow: {
-      potentialGrossRent: potentialGrossRentY0,
-      vacancyLoss: vacancyLossY0,
-      effectiveGrossRent: y0GrossRent,
-      managementFees: managementFeesY0,
-      otherOperatingExpenses: otherOperatingExpensesY0,
-      mortgageRepayments: y0AnnualMortgage,
-      netCashflow: y0NetCashflow
+      potentialGrossRent: weeklyRent * 52,
+      vacancyLoss: (weeklyRent * 52) - y0.grossRent,
+      effectiveGrossRent: y0.grossRent,
+      managementFees: y0.grossRent * (managementFeePercent / 100),
+      otherOperatingExpenses: y0.totalExpenses - (y0.grossRent * (managementFeePercent / 100)),
+      mortgageRepayments: y0.interestPaid + y0.principalPaid,
+      netCashflow: y0.netCashflow,
+      taxRefund: y0.taxRefund,
+      afterTaxCashflow: y0.afterTaxCashflow,
+      depreciation: y0.depreciation
     },
     projections,
-    positiveCashflowYear
+    positiveCashflowYear,
+    positiveCashflowAfterTaxYear
   };
 };

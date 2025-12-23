@@ -1,4 +1,4 @@
-import { AustralianState, InputState } from "./types";
+import { AustralianState, InputState, DepreciationLevel } from "./types";
 
 export const COLORS = {
   bg: "#FFFCED",
@@ -10,12 +10,17 @@ export const COLORS = {
   lightGrey: "#F3F4F6",
 };
 
-// INSTRUCTIONS FOR LOGO:
-// 1. Go to https://www.base64-image.de/
-// 2. Upload your original "Homez" logo file (PNG or JPG).
-// 3. Click "Copy Image" or copy the generated string.
-// 4. Paste the string inside the quotes below to use your logo "as is".
-// Example format: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+/**
+ * 2024-25 Stage 3 Tax Brackets
+ */
+export const TAX_BRACKETS = [
+  { threshold: 190000, rate: 0.45 },
+  { threshold: 135000, rate: 0.37 },
+  { threshold: 45000, rate: 0.30 },
+  { threshold: 18200, rate: 0.16 },
+  { threshold: 0, rate: 0 },
+];
+
 export const LOGO_BASE64 = "";
 
 export const DEFAULT_INPUTS: InputState = {
@@ -29,7 +34,7 @@ export const DEFAULT_INPUTS: InputState = {
   isInterestOnly: false,
   interestOnlyYears: 5,
 
-  stampDuty: 0, // Will be auto-calced on init
+  stampDuty: 0,
   buyersAgentFee: 15000,
   solicitorFee: 2000,
   buildingPestFee: 600,
@@ -44,6 +49,11 @@ export const DEFAULT_INPUTS: InputState = {
   landTax: 0,
   bodyCorp: 0,
   otherExpenses: 0,
+
+  // Taxation & Depreciation Defaults
+  annualSalary: 120000,
+  depreciationLevel: DepreciationLevel.Recent,
+  manualDepreciation: 0,
 
   capitalGrowthPercent: 6,
   rentalGrowthPercent: 4,
