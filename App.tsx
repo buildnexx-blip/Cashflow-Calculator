@@ -34,7 +34,6 @@ const App: React.FC = () => {
   const [dispatchError, setDispatchError] = useState<string | null>(null);
   const [showAfterTax, setShowAfterTax] = useState(true);
   const [clientDetails, setClientDetails] = useState<UserDetails | null>(null);
-  const [showAudit, setShowAudit] = useState(false);
   
   useEffect(() => {
     const calcResults = calculateProjections(inputs);
@@ -288,32 +287,38 @@ const App: React.FC = () => {
                </table>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="mt-12 p-8 bg-white rounded-3xl border border-gray-100 shadow-sm">
-         <button onClick={() => setShowAudit(!showAudit)} className="text-[10px] font-bold text-gray-400 hover:text-[#064E2C] uppercase tracking-[0.3em] flex items-center gap-2">
-            <svg className={`w-3 h-3 transition-transform ${showAudit ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
-            Calculation Protocol Verification
-         </button>
-         {showAudit && (
-            <div className="mt-4 p-6 bg-gray-900 rounded-2xl text-green-400 font-mono text-[10px] overflow-x-auto">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                     <p className="text-blue-400 mb-1">// ST-03: Tax Cap Logic</p>
-                     <p>Status: Refund limited by total tax paid on salary of ${inputs.annualSalary.toLocaleString()}</p>
-                     <p className="mt-3 text-blue-400 mb-1">// ST-04: IO to P&I Transition</p>
-                     <p>Mode: {inputs.isInterestOnly ? `Reset to P&I after ${inputs.interestOnlyYears} yrs` : 'Standard P&I Active'}</p>
-                  </div>
-                  <div>
-                     <p className="text-blue-400 mb-1">// Production Signature</p>
-                     <p>V2.2 Stable Engine (2024-25 Brackets)</p>
-                     <p className="mt-3 text-blue-400 mb-1">// API Bridge</p>
-                     <p>Endpoint: /api/send-report (Active)</p>
-                  </div>
-               </div>
+          {/* 10-YEAR FORECAST TABLE */}
+          <div className="bg-white rounded-[24px] p-6 border border-[#C6A672]/30 shadow-sm overflow-hidden">
+            <h3 className="text-lg font-serif font-semibold text-[#064E2C] mb-4">10-Year Portfolio Forecast</h3>
+            <div className="overflow-x-auto">
+               <table className="w-full text-sm text-left">
+                  <thead className="bg-[#064E2C] text-white">
+                     <tr>
+                        <th className="px-4 py-3 rounded-l-lg">Year</th>
+                        <th className="px-4 py-3">Value</th>
+                        <th className="px-4 py-3">Equity</th>
+                        <th className="px-4 py-3">Rent (Wk)</th>
+                        <th className="px-4 py-3">Pre-Tax CF</th>
+                        <th className="px-4 py-3 text-right rounded-r-lg">Post-Tax CF</th>
+                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {results.projections.slice(0, 11).map((p) => (
+                      <tr key={p.year} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-400">{p.year === 0 ? 'ACQ' : p.year}</td>
+                        <td className="px-4 py-3 font-semibold">${Math.round(p.propertyValue).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-green-700 font-bold">${Math.round(p.equity).toLocaleString()}</td>
+                        <td className="px-4 py-3 font-medium">${Math.round(p.weeklyRent).toLocaleString()}</td>
+                        <td className={`px-4 py-3 font-bold ${p.netCashflow >= 0 ? 'text-green-600' : 'text-red-500'}`}>${Math.round(p.netCashflow).toLocaleString()}</td>
+                        <td className={`px-4 py-3 text-right font-bold ${p.afterTaxCashflow >= 0 ? 'text-green-600' : 'text-red-500'}`}>${Math.round(p.afterTaxCashflow).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+               </table>
             </div>
-         )}
+          </div>
+        </div>
       </div>
 
       <div className="mt-8 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
