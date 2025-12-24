@@ -471,7 +471,10 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                <button type="submit" disabled={isGenerating} className="w-full mt-8 bg-[#064E2C] text-white font-black py-5 rounded-full shadow-2xl disabled:opacity-70 transition-all transform hover:-translate-y-1 active:scale-95 uppercase tracking-widest text-xs">
                  {isGenerating ? 'Analyzing Logic Pools...' : 'Generate Full PDF Report'}
                </button>
-               <p className="text-[10px] text-center text-gray-400 mt-6 font-bold uppercase tracking-widest">Secured by Homez Engine {VERSION}</p>
+               <p className="text-[9px] text-center text-gray-400 mt-6 leading-relaxed px-4">
+                 By proceeding, you agree to Homez Buyers Advocacy's Terms & Privacy Policy regarding the collection and handling of your data.
+                 <br/><span className="font-bold mt-1 block uppercase tracking-widest">Secured by Homez Engine {VERSION}</span>
+               </p>
               </form>
            </>
         ) : (

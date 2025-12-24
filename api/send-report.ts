@@ -46,13 +46,13 @@ export default async function handler(req: any, res: any) {
               
               <!-- Call to Action -->
               <div style="margin-top: 35px; text-align: center;">
-                <a href="https://homezbuyers.com.au/contact" style="background-color: #064E2C; color: #ffffff; padding: 14px 28px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 14px; letter-spacing: 1px; display: inline-block;">BOOK STRATEGY CALL</a>
+                <a href="https://outlook.office365.com/book/InitialConsultation@NETORG16333069.onmicrosoft.com/" style="background-color: #064E2C; color: #ffffff; padding: 14px 28px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 14px; letter-spacing: 1px; display: inline-block;">BOOK STRATEGY CALL</a>
                 <p style="color: #999; font-size: 12px; margin-top: 15px;">Review your results with a Senior Property Strategist.</p>
               </div>
 
               <!-- Registration / Lead Capture Details for Admin Visibility -->
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px dashed #e5e7eb; background-color: #f9fafb; padding: 20px; border-radius: 8px;">
-                 <h3 style="font-size: 11px; color: #C6A672; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; font-weight: 900;">Lead Capture Details</h3>
+                 <h3 style="font-size: 11px; color: #C6A672; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; font-weight: 900;">User Contact Details</h3>
                  <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #666; width: 80px;">Name:</td>
