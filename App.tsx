@@ -173,7 +173,7 @@ const App: React.FC = () => {
       </header>
 
       <div id="main-calculator" className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* LEFT COLUMN: INPUTS */}
+        {/* LEFT COLUMN: INPUTS (ORDER 1 on Mobile) */}
         <div className="lg:col-span-4 space-y-10 order-1">
           <section className="bg-white rounded-[32px] p-8 shadow-[0_4px_24px_rgba(198,166,114,0.1)] border border-[#C6A672]/20">
             <h2 className="text-[14px] font-black text-[#C6A672] uppercase tracking-[0.2em] mb-8 border-b border-[#C6A672]/10 pb-3">PROPERTY DETAILS</h2>
@@ -268,7 +268,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: RESULTS */}
+        {/* RIGHT COLUMN: RESULTS (ORDER 2 on Mobile) */}
         <div className="lg:col-span-8 space-y-10 order-2 lg:sticky lg:top-8">
           {/* Summary Performance Section */}
           <section className="bg-white rounded-[40px] p-10 shadow-[0_8px_40px_rgba(6,78,44,0.08)] border border-[#064E2C]/5 overflow-hidden proprietary-watermark">

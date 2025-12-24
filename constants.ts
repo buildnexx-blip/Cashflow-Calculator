@@ -1,6 +1,6 @@
 import { AustralianState, InputState, DepreciationLevel } from "./types";
 
-export const VERSION = "2.5-PRODUCTION";
+export const VERSION = "2.6-MOBILE-LIVE";
 export const ENGINE_NAME = "Homez Wealth Projection Engine (HWPE)";
 
 export const COLORS = {
