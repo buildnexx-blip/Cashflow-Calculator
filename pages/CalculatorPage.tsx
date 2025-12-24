@@ -10,6 +10,8 @@ import html2canvas from 'html2canvas';
 // @ts-ignore
 import { jsPDF } from 'jspdf';
 
+const STORAGE_KEY = 'homez_calc_inputs_v1';
+
 const FAQ_DATA = [
   {
     question: "How does the HWPE Engine calculate cashflow?",
@@ -56,23 +58,36 @@ const COMPREHENSIVE_DISCLAIMER = (
 );
 
 const CalculatorPage: React.FC = () => {
-  // Initialize inputs state
-  const [inputs, setInputs] = useState<InputState>(() => ({
-    ...DEFAULT_INPUTS,
-    stampDuty: estimateStampDuty(DEFAULT_INPUTS.state, DEFAULT_INPUTS.purchasePrice)
-  }));
+  // Initialize inputs state with LocalStorage persistence
+  const [inputs, setInputs] = useState<InputState>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        // Merge saved data with defaults to ensure any new schema fields are present
+        return { ...DEFAULT_INPUTS, ...JSON.parse(saved) };
+      }
+    } catch (error) {
+      console.warn('Failed to load saved inputs:', error);
+    }
+    return {
+      ...DEFAULT_INPUTS,
+      stampDuty: estimateStampDuty(DEFAULT_INPUTS.state, DEFAULT_INPUTS.purchasePrice)
+    };
+  });
   
   // Initialize results immediately to prevent null render flash
-  const [results, setResults] = useState<CalculationResult | null>(() => calculateProjections({
-    ...DEFAULT_INPUTS,
-    stampDuty: estimateStampDuty(DEFAULT_INPUTS.state, DEFAULT_INPUTS.purchasePrice)
-  }));
+  const [results, setResults] = useState<CalculationResult | null>(() => calculateProjections(inputs));
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAfterTax, setShowAfterTax] = useState(true);
   const [clientDetails, setClientDetails] = useState<UserDetails | null>(null);
   const [isFaqVisible, setIsFaqVisible] = useState(false);
+
+  // Persistence Effect
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(inputs));
+  }, [inputs]);
 
   useEffect(() => {
     const calcResults = calculateProjections(inputs);
@@ -98,6 +113,7 @@ const CalculatorPage: React.FC = () => {
       stampDuty: estimateStampDuty(DEFAULT_INPUTS.state, DEFAULT_INPUTS.purchasePrice)
     };
     setInputs(defaultsWithDuty);
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   const generatePDF = async (userDetails: UserDetails): Promise<boolean> => {

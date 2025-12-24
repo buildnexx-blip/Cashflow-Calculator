@@ -29,50 +29,80 @@ interface Scenario {
   inputs: InputState;
 }
 
+const STORAGE_KEYS = {
+  SCENARIO_A: 'homez_compare_a_v1',
+  SCENARIO_B: 'homez_compare_b_v1',
+  GLOBAL_SALARY: 'homez_compare_salary_v1'
+};
+
 const ComparePage: React.FC = () => {
   // Global Settings (Applies to both)
-  const [globalSalary, setGlobalSalary] = useState<number>(120000);
-
-  // Scenario State
-  const [scenarioA, setScenarioA] = useState<Scenario>({
-    id: 'A',
-    name: 'Scenario 1',
-    color: COLORS.primary,
-    strategy: 'Growth',
-    inputs: { 
-        ...DEFAULT_INPUTS, 
-        purchasePrice: 850000, 
-        weeklyRent: 650, 
-        state: AustralianState.VIC, 
-        capitalGrowthPercent: 7, 
-        rentalGrowthPercent: 5,
-        annualSalary: 120000,
-        stampDuty: estimateStampDuty(AustralianState.VIC, 850000)
-    }
+  const [globalSalary, setGlobalSalary] = useState<number>(() => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEYS.GLOBAL_SALARY);
+        return saved ? Number(saved) : 120000;
+    } catch { return 120000; }
   });
 
-  const [scenarioB, setScenarioB] = useState<Scenario>({
-    id: 'B',
-    name: 'Scenario 2',
-    color: COLORS.accent,
-    strategy: 'Yield',
-    inputs: { 
-        ...DEFAULT_INPUTS, 
-        purchasePrice: 650000, 
-        weeklyRent: 680, 
-        state: AustralianState.QLD, 
-        capitalGrowthPercent: 5, 
-        rentalGrowthPercent: 4,
-        annualSalary: 120000,
-        stampDuty: estimateStampDuty(AustralianState.QLD, 650000)
-    }
+  // Scenario State
+  const [scenarioA, setScenarioA] = useState<Scenario>(() => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEYS.SCENARIO_A);
+        if (saved) return { ...JSON.parse(saved), id: 'A' }; // Ensure ID is fixed
+    } catch (e) { console.warn('Failed to load Scenario A', e); }
+
+    return {
+        id: 'A',
+        name: 'Scenario 1',
+        color: COLORS.primary,
+        strategy: 'Growth',
+        inputs: { 
+            ...DEFAULT_INPUTS, 
+            purchasePrice: 850000, 
+            weeklyRent: 650, 
+            state: AustralianState.VIC, 
+            capitalGrowthPercent: 7, 
+            rentalGrowthPercent: 5,
+            annualSalary: 120000,
+            stampDuty: estimateStampDuty(AustralianState.VIC, 850000)
+        }
+    };
+  });
+
+  const [scenarioB, setScenarioB] = useState<Scenario>(() => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEYS.SCENARIO_B);
+        if (saved) return { ...JSON.parse(saved), id: 'B' }; // Ensure ID is fixed
+    } catch (e) { console.warn('Failed to load Scenario B', e); }
+
+    return {
+        id: 'B',
+        name: 'Scenario 2',
+        color: COLORS.accent,
+        strategy: 'Yield',
+        inputs: { 
+            ...DEFAULT_INPUTS, 
+            purchasePrice: 650000, 
+            weeklyRent: 680, 
+            state: AustralianState.QLD, 
+            capitalGrowthPercent: 5, 
+            rentalGrowthPercent: 4,
+            annualSalary: 120000,
+            stampDuty: estimateStampDuty(AustralianState.QLD, 650000)
+        }
+    };
   });
 
   // Sync Salary changes to both inputs to ensure tax calcs are accurate
   useEffect(() => {
     setScenarioA(prev => ({ ...prev, inputs: { ...prev.inputs, annualSalary: globalSalary } }));
     setScenarioB(prev => ({ ...prev, inputs: { ...prev.inputs, annualSalary: globalSalary } }));
+    localStorage.setItem(STORAGE_KEYS.GLOBAL_SALARY, globalSalary.toString());
   }, [globalSalary]);
+
+  // Persistence Effects
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SCENARIO_A, JSON.stringify(scenarioA)); }, [scenarioA]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SCENARIO_B, JSON.stringify(scenarioB)); }, [scenarioB]);
 
   // Calculate Results
   const resultsA = calculateProjections(scenarioA.inputs);
