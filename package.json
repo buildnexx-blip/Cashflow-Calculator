@@ -1,4 +1,3 @@
-
 {
   "name": "homez-calculator",
   "private": true,
@@ -23,7 +22,7 @@
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
-    "vite-plugin-javascript-obfuscator": "^3.2.2",
+    "vite-plugin-javascript-obfuscator": "^3.1.0",
     "terser": "^5.31.0"
   }
 }
