@@ -46,6 +46,9 @@ export default async function handler(req: any, res: any) {
               
               <!-- Call to Action -->
               <div style="margin-top: 35px; text-align: center;">
+                <p style="font-family: 'Georgia', serif; font-size: 16px; color: #064E2C; margin-bottom: 20px; line-height: 1.5;">
+                   <strong>Next Steps:</strong> <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #555; font-weight: normal;">If you would like to discuss this strategy with a Senior Buyer's Advocate.</span>
+                </p>
                 <a href="https://outlook.office365.com/book/InitialConsultation@NETORG16333069.onmicrosoft.com/" style="background-color: #064E2C; color: #ffffff; padding: 14px 28px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 14px; letter-spacing: 1px; display: inline-block;">BOOK STRATEGY CALL</a>
                 <p style="color: #999; font-size: 12px; margin-top: 15px;">Review your results with a Senior Property Strategist.</p>
               </div>
