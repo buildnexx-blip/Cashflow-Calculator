@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { DEFAULT_INPUTS, COLORS } from '../constants';
-import { InputState, CalculationResult, AustralianState, DepreciationLevel } from '../types';
+import { InputState, CalculationResult, AustralianState } from '../types';
 import { calculateProjections, estimateStampDuty } from '../utils/calculations';
-import { NumberInput, SelectInput, InputGroup } from '../components/InputGroup';
+import { NumberInput, SelectInput } from '../components/InputGroup';
 import {
   ComposedChart,
-  Line,
   Bar,
   XAxis,
   YAxis,
@@ -34,6 +33,137 @@ const STORAGE_KEYS = {
   SCENARIO_B: 'homez_compare_b_v1',
   GLOBAL_SALARY: 'homez_compare_salary_v1'
 };
+
+// --- Helper Components defined before use ---
+
+const Group: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <div>
+        <h4 className="text-[10px] font-black text-[#C6A672] uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">{title}</h4>
+        <div className="space-y-3">{children}</div>
+    </div>
+);
+
+const InputRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+    <div className="flex items-center gap-3">
+        <label className="w-20 text-[11px] font-bold text-gray-500 uppercase tracking-tight">{label}</label>
+        <div className="flex-1">{children}</div>
+    </div>
+);
+
+const ScenarioCard: React.FC<{
+  scenario: Scenario;
+  results: CalculationResult;
+  onUpdate: (field: keyof InputState, value: any) => void;
+  onNameChange: (val: string) => void;
+  onStrategyChange: (val: StrategyType) => void;
+  isWinnerEquity: boolean;
+  isWinnerCashflow: boolean;
+}> = ({ scenario, results, onUpdate, onNameChange, onStrategyChange, isWinnerEquity, isWinnerCashflow }) => {
+    
+  const currency = (val: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(val);
+  const percent = (val: number) => `${val.toFixed(2)}%`;
+  const totalCash = results.upfrontCostsTotal + (scenario.inputs.purchasePrice * (scenario.inputs.depositPercent/100));
+
+  return (
+    <div className={`bg-white rounded-[32px] overflow-hidden border-2 transition-all duration-300 ${isWinnerEquity ? 'border-[#064E2C] shadow-2xl scale-[1.02]' : 'border-transparent shadow-lg'}`}>
+        {/* Header */}
+        <div className="p-6" style={{ backgroundColor: `${scenario.color}15` }}>
+            <div className="flex flex-col gap-3 mb-4">
+                <input 
+                    value={scenario.name}
+                    onChange={(e) => onNameChange(e.target.value)}
+                    className="w-full bg-transparent font-serif font-bold text-2xl text-gray-900 focus:outline-none border-b border-gray-900/10 focus:border-gray-900/50 pb-1"
+                />
+                <select 
+                    value={scenario.strategy} 
+                    onChange={(e) => onStrategyChange(e.target.value as StrategyType)}
+                    className="text-xs font-bold text-[#064E2C] uppercase tracking-widest bg-white/50 border border-gray-900/10 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#064E2C]/20 cursor-pointer"
+                >
+                    <option value="Growth">Growth Strategy</option>
+                    <option value="Yield">Yield Strategy</option>
+                    <option value="Balanced">Balanced Strategy</option>
+                    <option value="Custom">Custom</option>
+                </select>
+            </div>
+            <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                <span>Entry Cost: {currency(totalCash)}</span>
+                <div className="flex gap-1">
+                    {isWinnerEquity && <span className="bg-[#064E2C] text-white px-2 py-0.5 rounded text-[9px] uppercase tracking-wide">Growth Lead</span>}
+                    {isWinnerCashflow && <span className="bg-[#C6A672] text-white px-2 py-0.5 rounded text-[9px] uppercase tracking-wide">Cashflow Lead</span>}
+                </div>
+            </div>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="px-6 py-6 grid grid-cols-2 gap-4 border-b border-gray-50">
+            <div>
+                <div className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1">Gross Yield</div>
+                <div className="text-xl font-bold text-gray-800">{percent((results.firstYearCashflow.effectiveGrossRent / scenario.inputs.purchasePrice) * 100)}</div>
+            </div>
+            <div>
+                <div className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1">Realized CF</div>
+                <div className={`text-xl font-bold ${results.firstYearCashflow.afterTaxCashflow >= 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
+                    {currency(results.firstYearCashflow.afterTaxCashflow)}
+                </div>
+                <div className="text-[9px] text-gray-400">per annum</div>
+            </div>
+        </div>
+
+        {/* Inputs */}
+        <div className="p-6 space-y-6">
+            <Group title="Acquisition">
+                <InputRow label="Price">
+                    <NumberInput prefix="$" value={scenario.inputs.purchasePrice} onChange={(e) => onUpdate('purchasePrice', Number(e.target.value))} className="py-2 text-sm" />
+                </InputRow>
+                <InputRow label="State">
+                    <SelectInput value={scenario.inputs.state} onChange={(e) => onUpdate('state', e.target.value)} className="py-2 text-sm">
+                        {Object.values(AustralianState).map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                </InputRow>
+                <InputRow label="Deposit %">
+                    <NumberInput suffix="%" value={scenario.inputs.depositPercent} onChange={(e) => onUpdate('depositPercent', Number(e.target.value))} className="py-2 text-sm" />
+                </InputRow>
+                <div className="flex justify-between text-[10px] text-gray-400 font-medium px-2 mt-2">
+                    <span>Stamp Duty: {currency(scenario.inputs.stampDuty)}</span>
+                    <span>Dep Amt: {currency(scenario.inputs.purchasePrice * (scenario.inputs.depositPercent / 100))}</span>
+                </div>
+            </Group>
+
+            <Group title="Income & Loan">
+                <InputRow label="Rent (Wk)">
+                    <NumberInput prefix="$" value={scenario.inputs.weeklyRent} onChange={(e) => onUpdate('weeklyRent', Number(e.target.value))} className="py-2 text-sm" />
+                </InputRow>
+                <InputRow label="Rate %">
+                    <NumberInput suffix="%" value={scenario.inputs.interestRate} onChange={(e) => onUpdate('interestRate', Number(e.target.value))} className="py-2 text-sm" />
+                </InputRow>
+            </Group>
+
+            <Group title="Holding Costs (Annual)">
+                <InputRow label="Rates">
+                    <NumberInput prefix="$" value={scenario.inputs.councilRates} onChange={(e) => onUpdate('councilRates', Number(e.target.value))} className="py-2 text-sm" />
+                </InputRow>
+                <InputRow label="Body Corp">
+                    <NumberInput prefix="$" value={scenario.inputs.bodyCorp} onChange={(e) => onUpdate('bodyCorp', Number(e.target.value))} className="py-2 text-sm" />
+                </InputRow>
+                <InputRow label="Mgmt %">
+                    <NumberInput suffix="%" value={scenario.inputs.managementFeePercent} onChange={(e) => onUpdate('managementFeePercent', Number(e.target.value))} className="py-2 text-sm" />
+                </InputRow>
+            </Group>
+
+            <Group title="Growth Assumptions">
+                <InputRow label="Capital %">
+                    <NumberInput suffix="%" value={scenario.inputs.capitalGrowthPercent} onChange={(e) => onUpdate('capitalGrowthPercent', Number(e.target.value))} className="py-2 text-sm bg-green-50" />
+                </InputRow>
+                <InputRow label="Rent %">
+                    <NumberInput suffix="%" value={scenario.inputs.rentalGrowthPercent} onChange={(e) => onUpdate('rentalGrowthPercent', Number(e.target.value))} className="py-2 text-sm bg-orange-50" />
+                </InputRow>
+            </Group>
+        </div>
+    </div>
+  );
+};
+
+// --- Main Page Component ---
 
 const ComparePage: React.FC = () => {
   // Global Settings (Applies to both)
@@ -325,134 +455,5 @@ const ComparePage: React.FC = () => {
     </div>
   );
 };
-
-// --- Subcomponents ---
-
-const ScenarioCard: React.FC<{
-  scenario: Scenario;
-  results: CalculationResult;
-  onUpdate: (field: keyof InputState, value: any) => void;
-  onNameChange: (val: string) => void;
-  onStrategyChange: (val: StrategyType) => void;
-  isWinnerEquity: boolean;
-  isWinnerCashflow: boolean;
-}> = ({ scenario, results, onUpdate, onNameChange, onStrategyChange, isWinnerEquity, isWinnerCashflow }) => {
-    
-  const currency = (val: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(val);
-  const percent = (val: number) => `${val.toFixed(2)}%`;
-  const totalCash = results.upfrontCostsTotal + (scenario.inputs.purchasePrice * (scenario.inputs.depositPercent/100));
-
-  return (
-    <div className={`bg-white rounded-[32px] overflow-hidden border-2 transition-all duration-300 ${isWinnerEquity ? 'border-[#064E2C] shadow-2xl scale-[1.02]' : 'border-transparent shadow-lg'}`}>
-        {/* Header */}
-        <div className="p-6" style={{ backgroundColor: `${scenario.color}15` }}>
-            <div className="flex flex-col gap-3 mb-4">
-                <input 
-                    value={scenario.name}
-                    onChange={(e) => onNameChange(e.target.value)}
-                    className="w-full bg-transparent font-serif font-bold text-2xl text-gray-900 focus:outline-none border-b border-gray-900/10 focus:border-gray-900/50 pb-1"
-                />
-                <select 
-                    value={scenario.strategy} 
-                    onChange={(e) => onStrategyChange(e.target.value as StrategyType)}
-                    className="text-xs font-bold text-[#064E2C] uppercase tracking-widest bg-white/50 border border-gray-900/10 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#064E2C]/20 cursor-pointer"
-                >
-                    <option value="Growth">Growth Strategy</option>
-                    <option value="Yield">Yield Strategy</option>
-                    <option value="Balanced">Balanced Strategy</option>
-                    <option value="Custom">Custom</option>
-                </select>
-            </div>
-            <div className="flex justify-between items-center text-xs font-bold text-gray-500">
-                <span>Entry Cost: {currency(totalCash)}</span>
-                <div className="flex gap-1">
-                    {isWinnerEquity && <span className="bg-[#064E2C] text-white px-2 py-0.5 rounded text-[9px] uppercase tracking-wide">Growth Lead</span>}
-                    {isWinnerCashflow && <span className="bg-[#C6A672] text-white px-2 py-0.5 rounded text-[9px] uppercase tracking-wide">Cashflow Lead</span>}
-                </div>
-            </div>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="px-6 py-6 grid grid-cols-2 gap-4 border-b border-gray-50">
-            <div>
-                <div className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1">Gross Yield</div>
-                <div className="text-xl font-bold text-gray-800">{percent((results.firstYearCashflow.effectiveGrossRent / scenario.inputs.purchasePrice) * 100)}</div>
-            </div>
-            <div>
-                <div className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1">Realized CF</div>
-                <div className={`text-xl font-bold ${results.firstYearCashflow.afterTaxCashflow >= 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>
-                    {currency(results.firstYearCashflow.afterTaxCashflow)}
-                </div>
-                <div className="text-[9px] text-gray-400">per annum</div>
-            </div>
-        </div>
-
-        {/* Inputs */}
-        <div className="p-6 space-y-6">
-            <Group title="Acquisition">
-                <InputRow label="Price">
-                    <NumberInput prefix="$" value={scenario.inputs.purchasePrice} onChange={(e) => onUpdate('purchasePrice', Number(e.target.value))} className="py-2 text-sm" />
-                </InputRow>
-                <InputRow label="State">
-                    <SelectInput value={scenario.inputs.state} onChange={(e) => onUpdate('state', e.target.value)} className="py-2 text-sm">
-                        {Object.values(AustralianState).map(s => <option key={s} value={s}>{s}</option>)}
-                    </SelectInput>
-                </InputRow>
-                <InputRow label="Deposit %">
-                    <NumberInput suffix="%" value={scenario.inputs.depositPercent} onChange={(e) => onUpdate('depositPercent', Number(e.target.value))} className="py-2 text-sm" />
-                </InputRow>
-                <div className="flex justify-between text-[10px] text-gray-400 font-medium px-2 mt-2">
-                    <span>Stamp Duty: {currency(scenario.inputs.stampDuty)}</span>
-                    <span>Dep Amt: {currency(scenario.inputs.purchasePrice * (scenario.inputs.depositPercent / 100))}</span>
-                </div>
-            </Group>
-
-            <Group title="Income & Loan">
-                <InputRow label="Rent (Wk)">
-                    <NumberInput prefix="$" value={scenario.inputs.weeklyRent} onChange={(e) => onUpdate('weeklyRent', Number(e.target.value))} className="py-2 text-sm" />
-                </InputRow>
-                <InputRow label="Rate %">
-                    <NumberInput suffix="%" value={scenario.inputs.interestRate} onChange={(e) => onUpdate('interestRate', Number(e.target.value))} className="py-2 text-sm" />
-                </InputRow>
-            </Group>
-
-            <Group title="Holding Costs (Annual)">
-                <InputRow label="Rates">
-                    <NumberInput prefix="$" value={scenario.inputs.councilRates} onChange={(e) => onUpdate('councilRates', Number(e.target.value))} className="py-2 text-sm" />
-                </InputRow>
-                <InputRow label="Body Corp">
-                    <NumberInput prefix="$" value={scenario.inputs.bodyCorp} onChange={(e) => onUpdate('bodyCorp', Number(e.target.value))} className="py-2 text-sm" />
-                </InputRow>
-                <InputRow label="Mgmt %">
-                    <NumberInput suffix="%" value={scenario.inputs.managementFeePercent} onChange={(e) => onUpdate('managementFeePercent', Number(e.target.value))} className="py-2 text-sm" />
-                </InputRow>
-            </Group>
-
-            <Group title="Growth Assumptions">
-                <InputRow label="Capital %">
-                    <NumberInput suffix="%" value={scenario.inputs.capitalGrowthPercent} onChange={(e) => onUpdate('capitalGrowthPercent', Number(e.target.value))} className="py-2 text-sm bg-green-50" />
-                </InputRow>
-                <InputRow label="Rent %">
-                    <NumberInput suffix="%" value={scenario.inputs.rentalGrowthPercent} onChange={(e) => onUpdate('rentalGrowthPercent', Number(e.target.value))} className="py-2 text-sm bg-orange-50" />
-                </InputRow>
-            </Group>
-        </div>
-    </div>
-  );
-};
-
-const Group: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div>
-        <h4 className="text-[10px] font-black text-[#C6A672] uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">{title}</h4>
-        <div className="space-y-3">{children}</div>
-    </div>
-);
-
-const InputRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-    <div className="flex items-center gap-3">
-        <label className="w-20 text-[11px] font-bold text-gray-500 uppercase tracking-tight">{label}</label>
-        <div className="flex-1">{children}</div>
-    </div>
-);
 
 export default ComparePage;
