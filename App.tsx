@@ -140,6 +140,7 @@ const App: React.FC = () => {
           body: JSON.stringify({
             userEmail: userDetails.email,
             userName: userDetails.name,
+            userPhone: userDetails.phone, // Include phone for lead capture
             pdfBase64: pdfBase64,
             fileName: fileName
           }),
@@ -466,7 +467,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
                 <input required placeholder="Last Name" className="w-full rounded-full bg-gray-50 border border-gray-100 px-7 py-4 outline-none focus:ring-4 focus:ring-[#064E2C]/5 focus:border-[#064E2C]/30 transition-all font-medium text-gray-700" onChange={e => setFormData({...formData, lastName: e.target.value})} />
                </div>
                <input required type="email" placeholder="Email Address" className="w-full rounded-full bg-gray-50 border border-gray-100 px-7 py-4 outline-none focus:ring-4 focus:ring-[#064E2C]/5 focus:border-[#064E2C]/30 transition-all font-medium text-gray-700" onChange={e => setFormData({...formData, email: e.target.value})} />
-               <input required type="tel" placeholder="Mobile Number" className="w-full rounded-full bg-gray-50 border border-gray-100 px-7 py-4 outline-none focus:ring-4 focus:ring-[#064E2C]/5 focus:border-[#064E2C]/30 transition-all font-medium text-gray-700" onChange={e => setFormData({...formData, phone: e.target.value})} />
+               <input required type="tel" pattern="[0-9 \+]*" placeholder="Mobile Number" className="w-full rounded-full bg-gray-50 border border-gray-100 px-7 py-4 outline-none focus:ring-4 focus:ring-[#064E2C]/5 focus:border-[#064E2C]/30 transition-all font-medium text-gray-700" onChange={e => setFormData({...formData, phone: e.target.value})} />
                <button type="submit" disabled={isGenerating} className="w-full mt-8 bg-[#064E2C] text-white font-black py-5 rounded-full shadow-2xl disabled:opacity-70 transition-all transform hover:-translate-y-1 active:scale-95 uppercase tracking-widest text-xs">
                  {isGenerating ? 'Analyzing Logic Pools...' : 'Generate Full PDF Report'}
                </button>
