@@ -29,7 +29,7 @@ const formatCurrency = (value: number, decimals = 1) => {
   return `$${(value / 1000).toFixed(0)}k`;
 };
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as YearlyProjection;
     return (
@@ -189,12 +189,11 @@ const ProjectionChart: React.FC<ProjectionChartProps> = ({ data, positiveCashflo
                 strokeDasharray="4 4" 
                 yAxisId="left"
                 label={{ 
-                  value: 'Break-Even', 
+                  value: 'BREAK-EVEN', 
                   position: 'insideTopLeft', 
                   fill: COLORS.dark,
                   fontSize: 9,
                   fontWeight: '900',
-                  textTransform: 'uppercase'
                 }} 
               />
             )}
