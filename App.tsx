@@ -97,21 +97,32 @@ const App: React.FC = () => {
     setClientDetails(userDetails);
     setIsGenerating(true);
     
+    // Allow React to render the print view with new details before capturing
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     const page1Element = document.getElementById('print-page-1');
     const page2Element = document.getElementById('print-page-2');
+    const page3Element = document.getElementById('print-page-3');
 
-    if (page1Element && page2Element) {
+    if (page1Element && page2Element && page3Element) {
       try {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
+        // Page 1
         const canvas1 = await html2canvas(page1Element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
         pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
         
+        // Page 2
         pdf.addPage();
         const canvas2 = await html2canvas(page2Element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
         pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+        
+        // Page 3
+        pdf.addPage();
+        const canvas3 = await html2canvas(page3Element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+        pdf.addImage(canvas3.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
         
         const fileName = `Homez_Proprietary_Analysis_${userDetails.name.replace(/\s+/g, '_')}.pdf`;
         
@@ -122,7 +133,7 @@ const App: React.FC = () => {
         const pdfBase64 = pdf.output('datauristring').split(',')[1];
 
         // Automated dispatch to Homez Admin + Client via Resend
-        await fetch('/api/send-report', {
+        const emailResponse = await fetch('/api/send-report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -132,6 +143,10 @@ const App: React.FC = () => {
             fileName: fileName
           }),
         });
+
+        if (!emailResponse.ok) {
+           console.error("Email API Error:", await emailResponse.text());
+        }
         
         setIsGenerating(false);
         return true;
@@ -405,6 +420,14 @@ const KPITile: React.FC<{ label: string; value: string; subtext: string; highlig
   </div>
 );
 
+const PrintTile: React.FC<{ label: string; value: string; subtext: string; highlight?: boolean }> = ({ label, value, subtext, highlight }) => (
+    <div className="bg-[#F9FAFB] rounded-2xl p-4 border border-gray-100 flex flex-col items-center justify-center text-center h-[140px]">
+      <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{label}</span>
+      <span className={`text-2xl font-serif font-bold mb-1 ${highlight === true ? 'text-[#064E2C]' : highlight === false ? 'text-red-500' : 'text-[#0B090A]'}`}>{value}</span>
+      <span className="text-[8px] text-[#C6A672] font-black uppercase tracking-widest">{subtext}</span>
+    </div>
+);
+
 interface ShareModalProps { onClose: () => void; onGenerate: (data: UserDetails) => Promise<boolean>; isGenerating: boolean; }
 
 const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerating }) => {
@@ -460,47 +483,197 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, onGenerate, isGenerati
   );
 };
 
+const HomezLogoMark: React.FC<{ className?: string }> = ({ className }) => (
+    <div className={`flex flex-col items-end ${className}`}>
+        <h1 className="text-3xl font-serif font-bold text-[#064E2C] tracking-tight leading-none">HOMEZ</h1>
+        <p className="text-[#C6A672] text-[8px] font-bold uppercase tracking-[0.35em] leading-none mt-1">Buyers Advocacy</p>
+    </div>
+);
+
+const Footer: React.FC<{ page: number, total: number }> = ({ page, total }) => (
+    <div className="mt-auto border-t border-gray-100 pt-6 flex justify-between items-center text-[9px] text-gray-400 uppercase tracking-widest font-medium">
+        <div className="flex items-center gap-2">
+            <span className="font-bold text-[#064E2C]">HOMEZ Buyers Advocacy</span>
+            <span>•</span>
+            <span>HWPE Engine v{VERSION}</span>
+        </div>
+        <span>Page {page} of {total}</span>
+    </div>
+);
+
 const PrintReport: React.FC<{ inputs: InputState, results: CalculationResult, clientDetails: UserDetails | null }> = ({ inputs, results, clientDetails }) => {
-  const depositAmount = inputs.purchasePrice * (inputs.depositPercent / 100);
-  const totalCashRequired = results.upfrontCostsTotal + depositAmount;
+  const currency = (val: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
+  const percent = (val: number) => `${val.toFixed(2)}%`;
+  
+  const totalCashRequired = results.upfrontCostsTotal + (inputs.purchasePrice * (inputs.depositPercent/100));
 
   return (
     <div className="bg-white">
-        <div id="print-page-1" className="w-[800px] h-[1132px] bg-white p-16 font-sans text-gray-800 flex flex-col relative overflow-hidden">
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] rotate-[-45deg] pointer-events-none select-none text-9xl font-black uppercase whitespace-nowrap text-[#064E2C]">
-              PROPRIETARY HOMEZ ENGINE • HWPE {VERSION}
-           </div>
-           <div className="border-b-[4px] border-[#064E2C] pb-10 flex justify-between items-end mb-12">
-              <div><h1 className="text-4xl font-serif font-bold text-[#064E2C] leading-none mb-2">Homez Buyers Advocacy</h1><p className="text-[#C6A672] font-semibold text-sm tracking-widest uppercase">Proprietary Strategy Performance Report</p></div>
-              <div className="text-right text-[10px] text-gray-400 font-bold"><p className="text-[#064E2C] mb-1">{new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</p><p>SECURE DOCUMENT: HWPE-{VERSION}</p></div>
-           </div>
-           <div className="grid grid-cols-2 gap-12 mb-12">
-              <div><h3 className="text-[10px] font-bold text-[#C6A672] uppercase tracking-[0.2em] mb-4 uppercase">CLIENT INFORMATION</h3><div className="bg-[#FFFCED]/30 p-6 rounded-3xl border border-[#C6A672]/10"><p className="text-xl font-serif font-bold text-[#064E2C] uppercase">{clientDetails?.name || 'VALUED CLIENT'}</p></div></div>
-              <div><h3 className="text-[10px] font-bold text-[#C6A672] uppercase tracking-[0.2em] mb-4 uppercase">PORTFOLIO TARGET</h3><div className="bg-[#FFFCED]/30 p-6 rounded-3xl border border-[#C6A672]/10"><p className="text-xl font-serif font-bold text-[#064E2C] uppercase">{inputs.propertyAddress || 'CONFIDENTIAL TARGET'}</p><p className="text-sm text-gray-500 mt-2 uppercase">${inputs.purchasePrice.toLocaleString()} ALLOCATION</p></div></div>
-           </div>
-           <div className="bg-[#064E2C] p-10 rounded-[40px] shadow-2xl mb-12 relative overflow-hidden text-white text-center">
-             <h3 className="text-[11px] font-bold text-white/50 uppercase tracking-[0.3em] mb-8 uppercase">HWPE MODEL OUTPUT (YEAR 0)</h3>
-             <div className="grid grid-cols-5 gap-4">
-               <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-2">YIELD</p><p className="text-2xl font-serif font-bold">{((results.firstYearCashflow.effectiveGrossRent / inputs.purchasePrice) * 100).toFixed(2)}%</p></div>
-               <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-2">POST-TAX (WK)</p><p className="text-2xl font-serif font-bold">${Math.round(results.firstYearCashflow.afterTaxCashflow / 52).toLocaleString()}</p></div>
-               <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-2">PRE-TAX (WK)</p><p className="text-2xl font-serif font-bold">${Math.round(results.firstYearCashflow.netCashflow / 52).toLocaleString()}</p></div>
-               <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-2">ATO BENEFIT</p><p className="text-2xl font-serif font-bold">${Math.round(results.firstYearCashflow.taxRefund).toLocaleString()}</p></div>
-               <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-2">CAP. REQUIRED</p><p className="text-2xl font-serif font-bold">${totalCashRequired.toLocaleString()}</p></div>
+      {/* PAGE 1: EXECUTIVE SUMMARY & INPUTS */}
+      <div id="print-page-1" className="w-[794px] h-[1123px] bg-white p-12 flex flex-col relative overflow-hidden">
+         {/* Background Elements */}
+         <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#064E2C]/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+         
+         {/* Header */}
+         <div className="flex justify-between items-end mb-12 relative z-10 border-b border-[#064E2C] pb-6">
+            <div className="flex flex-col items-start gap-2">
+               <h2 className="text-4xl font-serif font-bold text-gray-900 leading-none">Investment Strategy</h2>
+               <span className="text-[#064E2C] text-[10px] font-bold uppercase tracking-widest pl-0.5">
+                  Confidential Analysis
+               </span>
+            </div>
+            <HomezLogoMark />
+         </div>
+
+         {/* Introduction */}
+         <div className="mb-10 relative z-10 bg-[#FFFCED] rounded-xl p-6 border border-[#C6A672]/20">
+            <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                Prepared exclusively for <span className="font-bold text-[#064E2C] text-sm">{clientDetails?.name}</span>
+            </p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                Date: {new Date().toLocaleDateString('en-AU', { dateStyle: 'long' })} • Ref: {clientDetails?.name.split(' ').map(n => n[0]).join('')}-{Date.now().toString().slice(-4)}
+            </p>
+         </div>
+
+         {/* Property & Loan Grid */}
+         <div className="grid grid-cols-2 gap-8 mb-10 relative z-10">
+            <div className="bg-white rounded-2xl p-0">
+               <h3 className="text-[#064E2C] text-[11px] font-black uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Property Particulars</h3>
+               <div className="space-y-3">
+                  <Row label="Address" value={inputs.propertyAddress || "TBA"} />
+                  <Row label="State / Territory" value={inputs.state} />
+                  <Row label="Purchase Price" value={currency(inputs.purchasePrice)} highlight />
+                  <Row label="Weekly Rental" value={currency(inputs.weeklyRent)} />
+                  <Row label="Gross Yield" value={percent((inputs.weeklyRent * 52) / inputs.purchasePrice * 100)} />
+               </div>
+            </div>
+            <div className="bg-white rounded-2xl p-0">
+               <h3 className="text-[#064E2C] text-[11px] font-black uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Financial Structure</h3>
+               <div className="space-y-3">
+                  <Row label="Loan Amount" value={currency(results.loanAmount)} />
+                  <Row label="LVR" value={percent(results.lvr)} />
+                  <Row label="Interest Rate" value={`${inputs.interestRate}%`} />
+                  <Row label="Loan Type" value={inputs.isInterestOnly ? `Interest Only (${inputs.interestOnlyYears}yr)` : "Principal & Interest"} />
+                  <Row label="Total Cash Required" value={currency(totalCashRequired)} highlight />
+               </div>
+            </div>
+         </div>
+
+         {/* Performance Snapshot (Tiles) - REPLACES GREEN BLOCK */}
+         <div className="flex-1">
+             <h3 className="text-[#064E2C] text-[11px] font-black uppercase tracking-widest mb-6">Year 1 Performance Snapshot</h3>
+             <div className="grid grid-cols-3 gap-4 mb-4">
+                 <PrintTile label="Gross Yield" value={`${((results.firstYearCashflow.effectiveGrossRent / inputs.purchasePrice) * 100).toFixed(2)}%`} subtext="Annualized Return" />
+                 <PrintTile label="Pre-Tax (Wk)" value={`$${Math.round(results.firstYearCashflow.netCashflow / 52).toLocaleString()}`} subtext="Weekly Cashflow" highlight={results.firstYearCashflow.netCashflow > 0} />
+                 <PrintTile label="Post-Tax (Wk)" value={`$${Math.round(results.firstYearCashflow.afterTaxCashflow / 52).toLocaleString()}`} subtext="Weekly Realized" highlight={results.firstYearCashflow.afterTaxCashflow > 0} />
              </div>
-           </div>
-           <div className="mt-auto pt-10 text-[9px] text-gray-300 italic border-t border-gray-100 flex justify-between uppercase tracking-widest"><div>© Homez Buyers Advocacy • Proprietary IP Protected Analysis</div><div>Page 01 // 02</div></div>
-        </div>
-        <div id="print-page-2" className="w-[800px] h-[1132px] bg-white p-16 font-sans text-gray-800 flex flex-col relative overflow-hidden">
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] rotate-[-45deg] pointer-events-none select-none text-9xl font-black uppercase whitespace-nowrap text-[#064E2C]">
-              PROPRIETARY HOMEZ ENGINE • HWPE {VERSION}
-           </div>
-           <div className="border-b-[4px] border-[#C6A672] pb-8 flex justify-between items-end mb-10"><h2 className="text-3xl font-serif font-bold text-[#064E2C] uppercase tracking-tight">PORTFOLIO WEALTH SCALING</h2><div className="text-right text-[10px] text-gray-400 font-bold tracking-[0.3em]">30-YEAR LOGIC PROJECTION</div></div>
-           <div className="mb-12 p-8 bg-[#FFFCED]/10 rounded-[40px] border border-[#C6A672]/20"><ProjectionChart data={results.projections} positiveCashflowYear={results.positiveCashflowAfterTaxYear} isPrintMode={true} /></div>
-           <div className="flex-1"><h3 className="text-[10px] font-bold text-[#C6A672] uppercase tracking-[0.2em] mb-6 uppercase">CONFIDENTIAL PORTFOLIO MATRIX</h3><div className="overflow-hidden rounded-[32px] border border-gray-100 shadow-sm"><table className="w-full text-[11px] text-left leading-normal"><thead className="bg-[#064E2C] text-white"><tr><th className="px-6 py-4 font-bold uppercase tracking-widest">Year</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Asset Value</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Weekly Rent</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Equity</th><th className="px-6 py-4 font-bold uppercase tracking-widest">Pre-Tax CF</th><th className="px-6 py-4 text-right font-bold pr-8 uppercase tracking-widest">Post-Tax CF</th></tr></thead><tbody className="divide-y divide-gray-100">{results.projections.slice(0, 11).map((p, idx) => (<tr key={p.year} className={idx % 2 === 1 ? 'bg-[#F9FAFB]' : 'bg-white'}><td className="px-6 py-4 font-bold text-[#C6A672]">{p.year === 0 ? 'ENTRY' : `YR ${p.year}`}</td><td className="px-6 py-4 font-bold text-gray-900">${Math.round(p.propertyValue).toLocaleString()}</td><td className="px-6 py-4 font-medium text-gray-600">${Math.round(p.weeklyRent).toLocaleString()}</td><td className="px-6 py-4 font-bold text-green-700">${Math.round(p.equity).toLocaleString()}</td><td className={`px-6 py-4 font-bold ${p.netCashflow >= 0 ? 'text-green-600' : 'text-red-400'}`}>${Math.round(p.netCashflow).toLocaleString()}</td><td className={`px-6 py-4 text-right font-black pr-8 ${p.afterTaxCashflow >= 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>${Math.round(p.afterTaxCashflow).toLocaleString()}</td></tr>))}</tbody></table><p className="text-[8px] text-gray-400 mt-2 px-6 italic">Note: CF = Cash Flow position inclusive of all indexed operational index points.</p></div></div>
-           <div className="mt-8 pt-8 text-[9px] text-gray-300 italic border-t border-gray-100 flex justify-between uppercase tracking-widest"><div>© Homez Buyers Advocacy • High Fidelity Portfolio Engine</div><div>Page 02 // 02</div></div>
-        </div>
+             <div className="grid grid-cols-2 gap-4">
+                 <PrintTile label="Tax Recovery" value={currency(results.firstYearCashflow.taxRefund)} subtext="Est. Year 0 Refund" />
+                 <PrintTile label="Upfront Capital" value={currency(totalCashRequired)} subtext="Total Entry Costs" />
+             </div>
+         </div>
+
+         <Footer page={1} total={3} />
+      </div>
+
+      {/* PAGE 2: CHARTS & YEAR 0 BREAKDOWN */}
+      <div id="print-page-2" className="w-[794px] h-[1123px] bg-white p-12 flex flex-col relative overflow-hidden">
+         {/* Header */}
+         <div className="flex justify-between items-center mb-8 border-b border-[#C6A672]/30 pb-6">
+            <h2 className="text-2xl font-serif font-bold text-[#064E2C]">Wealth Velocity</h2>
+            <HomezLogoMark />
+         </div>
+
+         {/* Chart Section */}
+         <div className="h-[350px] mb-48 w-full">
+            <ProjectionChart data={results.projections} positiveCashflowYear={results.positiveCashflowAfterTaxYear} isPrintMode={true} />
+         </div>
+
+         {/* Year 0 Breakdown Table */}
+         <div className="flex-1">
+             <h3 className="text-[#064E2C] text-[11px] font-black uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">Year 0: Operational Cashflow Detail</h3>
+             <table className="w-full text-[10px] leading-relaxed">
+                <thead className="bg-[#064E2C]/5 text-[#064E2C]"><tr><th className="px-4 py-3 text-left font-black tracking-widest uppercase rounded-l-lg">Item</th><th className="px-4 py-3 text-right font-black tracking-widest uppercase">Monthly</th><th className="px-4 py-3 text-right font-black tracking-widest uppercase rounded-r-lg">Annual</th></tr></thead>
+                <tbody className="divide-y divide-gray-50">
+                    <tr><td className="px-4 py-3 font-medium">Effective Gross Rent</td><td className="px-4 py-3 text-right text-gray-500">${Math.round(results.firstYearCashflow.effectiveGrossRent / 12).toLocaleString()}</td><td className="px-4 py-3 text-right font-bold text-gray-900">${Math.round(results.firstYearCashflow.effectiveGrossRent).toLocaleString()}</td></tr>
+                    <tr><td className="px-4 py-3 font-medium text-gray-500">Less: Mortgage Repayments</td><td className="px-4 py-3 text-right text-red-400">-${Math.round(results.firstYearCashflow.mortgageRepayments / 12).toLocaleString()}</td><td className="px-4 py-3 text-right text-red-400">-${Math.round(results.firstYearCashflow.mortgageRepayments).toLocaleString()}</td></tr>
+                    <tr><td className="px-4 py-3 font-medium text-gray-500">Less: Operating Expenses</td><td className="px-4 py-3 text-right text-red-400">-${Math.round((results.firstYearCashflow.managementFees + results.firstYearCashflow.otherOperatingExpenses) / 12).toLocaleString()}</td><td className="px-4 py-3 text-right text-red-400">-${Math.round(results.firstYearCashflow.managementFees + results.firstYearCashflow.otherOperatingExpenses).toLocaleString()}</td></tr>
+                    <tr className="bg-gray-50 font-bold"><td className="px-4 py-3 text-[#064E2C] uppercase tracking-wider">Net Operating Cashflow (Pre-Tax)</td><td className={`px-4 py-3 text-right ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>${Math.round(results.firstYearCashflow.netCashflow / 12).toLocaleString()}</td><td className={`px-4 py-3 text-right ${results.firstYearCashflow.netCashflow > 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>${Math.round(results.firstYearCashflow.netCashflow).toLocaleString()}</td></tr>
+                    <tr><td className="px-4 py-3 font-medium text-[#C6A672] italic">Non-Cash: Depreciation Benefits</td><td className="px-4 py-3 text-right text-gray-400">-${Math.round(results.firstYearCashflow.depreciation / 12).toLocaleString()}</td><td className="px-4 py-3 text-right text-gray-400">-${Math.round(results.firstYearCashflow.depreciation).toLocaleString()}</td></tr>
+                    <tr><td className="px-4 py-3 font-medium text-[#064E2C]">ATO Tax Refund (Est.)</td><td className="px-4 py-3 text-right text-[#064E2C]">+${Math.round(results.firstYearCashflow.taxRefund / 12).toLocaleString()}</td><td className="px-4 py-3 text-right text-[#064E2C]">+${Math.round(results.firstYearCashflow.taxRefund).toLocaleString()}</td></tr>
+                    <tr className="bg-[#064E2C] text-white font-bold text-xs"><td className="px-4 py-4 rounded-l-lg uppercase tracking-wider">Net Position (Post-Tax)</td><td className="px-4 py-4 text-right">${Math.round(results.firstYearCashflow.afterTaxCashflow / 12).toLocaleString()}</td><td className="px-4 py-4 text-right rounded-r-lg">${Math.round(results.firstYearCashflow.afterTaxCashflow).toLocaleString()}</td></tr>
+                </tbody>
+             </table>
+         </div>
+
+         <Footer page={2} total={3} />
+      </div>
+
+      {/* PAGE 3: 10 YEAR TABLE & DISCLAIMER */}
+      <div id="print-page-3" className="w-[794px] h-[1123px] bg-white p-12 flex flex-col relative overflow-hidden">
+         {/* Header */}
+         <div className="flex justify-between items-center mb-10 border-b border-[#C6A672]/30 pb-6">
+            <h2 className="text-2xl font-serif font-bold text-[#064E2C]">10-Year Growth Forecast</h2>
+            <HomezLogoMark />
+         </div>
+
+         {/* Table Section */}
+         <div className="flex-1 mb-8">
+            <div className="rounded-xl border border-gray-100 overflow-hidden mb-6">
+               <table className="w-full text-[10px] leading-relaxed">
+                  <thead className="bg-[#064E2C] text-white">
+                     <tr>
+                        <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">Year</th>
+                        <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">Asset Value</th>
+                        <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">Loan Balance</th>
+                        <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-[#C6A672]">Equity</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase tracking-wider">Pre-Tax CF</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase tracking-wider">Post-Tax CF</th>
+                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                     {results.projections.slice(0, 11).map((p, i) => (
+                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                           <td className="px-4 py-3 font-bold text-[#064E2C]">{p.year === 0 ? 'Entry' : `Yr ${p.year}`}</td>
+                           <td className="px-4 py-3 font-medium">{currency(p.propertyValue)}</td>
+                           <td className="px-4 py-3 text-gray-500">{currency(p.loanBalance)}</td>
+                           <td className="px-4 py-3 font-bold text-[#C6A672]">{currency(p.equity)}</td>
+                           <td className={`px-4 py-3 text-right font-medium ${p.netCashflow >= 0 ? 'text-green-600' : 'text-red-400'}`}>{currency(p.netCashflow)}</td>
+                           <td className={`px-4 py-3 text-right font-bold ${p.afterTaxCashflow >= 0 ? 'text-[#064E2C]' : 'text-red-500'}`}>{currency(p.afterTaxCashflow)}</td>
+                        </tr>
+                     ))}
+                  </tbody>
+               </table>
+            </div>
+            <div className="flex gap-4 text-[9px] text-gray-400 bg-gray-50 p-4 rounded-lg border border-gray-100">
+               <p><span className="font-bold text-[#064E2C]">Model Assumptions:</span> Capital Growth: {inputs.capitalGrowthPercent}% • Rental Growth: {inputs.rentalGrowthPercent}% • CPI: {inputs.inflationPercent}% • Vacancy: {inputs.vacancyWeeks} weeks</p>
+            </div>
+         </div>
+
+         {/* Disclaimer */}
+         <div className="mt-auto border-t border-gray-200 pt-8">
+            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Legal Disclaimer & Important Information</h4>
+            <div className="columns-2 gap-8">
+                <p className="text-[8px] text-gray-400 leading-relaxed text-justify mb-4">
+                   This report is produced by the Homez Wealth Projection Engine (HWPE) for illustrative modeling purposes only. It does not constitute financial, legal, tax, or real estate advice. All figures are estimates based on the user-provided inputs and assumptions (including capital growth, rental growth, and inflation rates) and statutory tax scales for the 2024-25 financial year. 
+                </p>
+                <p className="text-[8px] text-gray-400 leading-relaxed text-justify">
+                   Actual results may differ materially depending on market conditions, changes in taxation law, and individual financial circumstances. Homez Buyers Advocacy and its affiliates accept no liability for any loss or damage arising from reliance on this information. Users should consult with a qualified financial advisor, accountant, and solicitor before making investment decisions. Depreciation estimates are indicative only; a professional Quantity Surveyor report is required for ATO tax deductions.
+                </p>
+            </div>
+         </div>
+
+         <Footer page={3} total={3} />
+      </div>
     </div>
   );
 };
+
+const Row = ({ label, value, highlight = false }: { label: string, value: string, highlight?: boolean }) => (
+    <div className="flex justify-between items-center text-[10px] py-1">
+        <span className="text-gray-500 font-medium uppercase tracking-wide">{label}</span>
+        <span className={`font-bold ${highlight ? 'text-[#064E2C]' : 'text-gray-900'}`}>{value}</span>
+    </div>
+);
 
 export default App;
