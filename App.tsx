@@ -106,23 +106,24 @@ const App: React.FC = () => {
 
     if (page1Element && page2Element && page3Element) {
       try {
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdf = new jsPDF('p', 'mm', 'a4', true); // 'true' enables compression
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
         // Page 1
         const canvas1 = await html2canvas(page1Element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-        pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+        // Use JPEG with 0.75 quality to reduce size (Crucial for Vercel 4.5MB limit)
+        pdf.addImage(canvas1.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, pdfHeight);
         
         // Page 2
         pdf.addPage();
         const canvas2 = await html2canvas(page2Element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-        pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(canvas2.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, pdfHeight);
         
         // Page 3
         pdf.addPage();
         const canvas3 = await html2canvas(page3Element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-        pdf.addImage(canvas3.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(canvas3.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, pdfHeight);
         
         const fileName = `Homez_Proprietary_Analysis_${userDetails.name.replace(/\s+/g, '_')}.pdf`;
         
@@ -145,13 +146,19 @@ const App: React.FC = () => {
         });
 
         if (!emailResponse.ok) {
-           console.error("Email API Error:", await emailResponse.text());
+           const errText = await emailResponse.text();
+           console.error("Email API Error:", errText);
+           alert(`System Alert: Email dispatch failed. Please check internet connection or try again later.\n\nError: ${errText.substring(0, 100)}`);
+        } else {
+           // Success Alert
+           // We do nothing here as the UI updates to 'Strategy Released' view
         }
         
         setIsGenerating(false);
         return true;
       } catch (error) {
         console.error("Critical: Engine Dispatch Failure", error);
+        alert("System Critical: Report generation failed. Please contact support.");
         setIsGenerating(false);
         return false;
       }
