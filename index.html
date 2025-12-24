@@ -3,11 +3,65 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Homez | Capital & Rental Growth Calculator</title>
-    <meta name="copyright" content="Homez Buyers Advocacy 2024">
+    
+    <!-- Primary SEO -->
+    <title>Investment Property Cashflow Calculator Australia | Homez HWPE Engine</title>
+    <meta name="description" content="Use the proprietary Homez HWPE Engine for accurate 10-year investment property cashflow projections, rental yields, and negative gearing analysis for Australian property investors. Stage 3 Tax compliant.">
+    <meta name="keywords" content="investment property cashflow calculator australia, negative gearing calculator, rental yield calculator, property wealth engine, homez buyers advocacy, property projection tool">
     <meta name="author" content="Homez Buyers Advocacy">
-    <meta name="description" content="Proprietary property investment modeling engine (HWPE) for Australian buyers.">
-    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="https://calculator.homezbuyers.com.au" />
+    
+    <!-- AEO & Social Media (Open Graph) -->
+    <meta property="og:title" content="Homez | Australian Property Wealth & Cashflow Engine">
+    <meta property="og:description" content="The most advanced 10-year projection engine for Australian property investors. Calculate yields, growth, and post-tax cashflow instantly.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://calculator.homezbuyers.com.au">
+    <meta property="og:image" content="https://calculator.homezbuyers.com.au/og-image-v2.jpg">
+    
+    <!-- JSON-LD Structured Data for SoftwareApplication and FAQ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Homez Wealth Projection Engine (HWPE)",
+      "operatingSystem": "Web",
+      "applicationCategory": "FinanceApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "AUD"
+      },
+      "description": "Professional-grade Australian investment property calculator for projecting capital growth, rental yields, and after-tax cashflow over 30 years.",
+      "author": {
+        "@type": "Organization",
+        "name": "Homez Buyers Advocacy",
+        "url": "https://homezbuyers.com.au"
+      }
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "How is investment property cashflow calculated in Australia?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "In Australia, investment property cashflow is calculated by taking gross rental income and subtracting all holding costs including property management, rates, insurance, and mortgage interest. The 'After-Tax' position further accounts for non-cash deductions like depreciation and marginal tax rate benefits from negative gearing."
+        }
+      }, {
+        "@type": "Question",
+        "name": "What are the acquisition costs for Australian investment property?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Acquisition costs typically include statutory stamp duty (which varies by state), buyer's advocacy fees, solicitor/conveyancing costs, and building and pest inspection fees. The Homez HWPE engine calculates these upfront capital requirements automatically based on state-specific legislation."
+        }
+      }]
+    }
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +81,6 @@
         background-color: var(--color-bg);
         color: var(--color-dark);
         font-family: var(--font-sans);
-        /* Deterrence: Prevents casual text scraping via UI selection */
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
@@ -38,19 +91,23 @@
         font-family: var(--font-serif);
       }
 
-      /* Proprietary Watermark CSS */
-      .proprietary-watermark::before {
+      .proprietary-watermark {
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .proprietary-watermark::after {
         content: "PROPRIETARY HWPE LOGIC • © HOMEZ";
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%) rotate(-15deg);
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: 900;
-        color: rgba(6, 78, 44, 0.03);
+        color: rgba(6, 78, 44, 0.05);
         white-space: nowrap;
         pointer-events: none;
-        z-index: 0;
+        z-index: 50;
       }
 
       ::-webkit-scrollbar {
@@ -86,6 +143,7 @@
 </script>
 </head>
   <body>
+    <a href="#main-calculator" class="sr-only focus:not-sr-only bg-[#064E2C] text-white p-4 absolute z-[100]">Skip to calculator</a>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

@@ -1,5 +1,8 @@
 import { AustralianState, InputState, DepreciationLevel } from "./types";
 
+export const VERSION = "2.5-PRODUCTION";
+export const ENGINE_NAME = "Homez Wealth Projection Engine (HWPE)";
+
 export const COLORS = {
   bg: "#FFFCED",
   primary: "#064E2C",
@@ -20,8 +23,6 @@ export const TAX_BRACKETS = [
   { threshold: 18200, rate: 0.16 },
   { threshold: 0, rate: 0 },
 ];
-
-export const LOGO_BASE64 = "";
 
 export const DEFAULT_INPUTS: InputState = {
   propertyAddress: "",

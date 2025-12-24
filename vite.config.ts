@@ -1,4 +1,3 @@
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import obfuscator from 'vite-plugin-javascript-obfuscator';
@@ -20,7 +19,8 @@ export default defineConfig({
         deadCodeInjectionThreshold: 0.4,
         debugProtection: true, // Prevents easy use of DevTools console
         debugProtectionInterval: 4000,
-        disableConsoleOutput: true,
+        // MUST BE FALSE TO SHOW OUR LEVEL 3 WARNINGS
+        disableConsoleOutput: false,
         identifierNamesGenerator: 'hexadecimal',
         log: false,
         numbersToExpressions: true,
@@ -41,7 +41,8 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        // ENSURE CONSOLE IS NOT DROPPED FOR DETERRENCE WARNINGS
+        drop_console: false,
         drop_debugger: true,
       },
     },
