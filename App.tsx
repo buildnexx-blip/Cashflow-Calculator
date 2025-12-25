@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import CalculatorPage from './pages/CalculatorPage';
 import ComparePage from './pages/ComparePage';
 
@@ -20,7 +20,7 @@ const App: React.FC = () => {
           <Routes>
             {/* V3.1 Baselined Cashflow Calculator - Existing Product */}
             <Route path="/" element={<CalculatorPage />} />
-            
+
             {/* Property Comparison Tool - New Isolated Product */}
             <Route path="/compare" element={<ComparePage />} />
           </Routes>
