@@ -233,7 +233,9 @@ export const calculateProjections = (inputs: InputState): CalculationResult => {
 };
 
 export const runDiagnostics = (inputs: InputState) => {
-  if (process.env.NODE_ENV === 'production') return;
+  // Safe environment check for Vite
+  if ((import.meta as any).env?.PROD) return;
+  
   console.group(`HWPE ${VERSION} DIAGNOSTICS`);
   const start = performance.now();
   const results = calculateProjections(inputs);
