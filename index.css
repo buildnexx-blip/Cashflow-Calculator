@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+:root {
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --color-bg: #FFFCED;
+  --color-primary: #064E2C;
+  --color-accent: #FD9B63;
+  --color-gold: #C6A672;
+  --color-dark: #0B090A;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-dark);
+  font-family: var(--font-sans);
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+}
+
+.proprietary-watermark {
+  position: relative;
+  overflow: hidden;
+}
+
+.proprietary-watermark::after {
+  content: "PROPRIETARY HWPE LOGIC • © HOMEZ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: rgba(6, 78, 44, 0.05);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+  border-radius: 4px;
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none; }
+}

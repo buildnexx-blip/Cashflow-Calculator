@@ -3,6 +3,29 @@ import { Resend } from 'resend';
 // Vercel will automatically inject RESEND_API_KEY from your project settings
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Email validation regex (RFC 5322 simplified)
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+// Sanitize user input to prevent XSS in email HTML
+const sanitizeInput = (input: string | undefined | null): string => {
+  if (!input) return '';
+  return String(input)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .trim()
+    .slice(0, 200); // Limit length
+};
+
+// Validate email format
+const isValidEmail = (email: string): boolean => {
+  if (!email || typeof email !== 'string') return false;
+  if (email.length > 254) return false; // Max email length per RFC
+  return EMAIL_REGEX.test(email);
+};
+
 export default async function handler(req: any, res: any) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -11,16 +34,34 @@ export default async function handler(req: any, res: any) {
 
   const { userEmail, userName, userPhone, pdfBase64, fileName } = req.body;
 
+  // Validate required fields
   if (!userEmail || !pdfBase64) {
     return res.status(400).json({ error: 'Missing required data' });
   }
+
+  // Validate email format
+  if (!isValidEmail(userEmail)) {
+    return res.status(400).json({ error: 'Invalid email address format' });
+  }
+
+  // Validate PDF base64 (basic check)
+  if (typeof pdfBase64 !== 'string' || pdfBase64.length < 100) {
+    return res.status(400).json({ error: 'Invalid PDF data' });
+  }
+
+  // Sanitize user inputs for HTML email
+  const safeName = sanitizeInput(userName) || 'Valued Client';
+  const safePhone = sanitizeInput(userPhone);
+  const safeEmail = sanitizeInput(userEmail);
+  const safeFileName = sanitizeInput(fileName) || 'Homez_Analysis.pdf';
+
 
   try {
     const data = await resend.emails.send({
       from: 'Homez Analysis <reports@homezbuyers.com.au>',
       to: [userEmail],
       cc: ['admin@homezbuyers.com.au'], // Sends a copy to your Microsoft account
-      subject: `Investment Strategy Analysis: ${userName}`,
+      subject: `Investment Strategy Analysis: ${safeName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -35,7 +76,7 @@ export default async function handler(req: any, res: any) {
             <!-- Content -->
             <div style="padding: 40px 32px;">
               <h2 style="color: #064E2C; margin-top: 0; font-family: 'Georgia', serif;">Strategy Report Ready</h2>
-              <p style="color: #555555; line-height: 1.6; font-size: 16px;">Hi ${userName},</p>
+              <p style="color: #555555; line-height: 1.6; font-size: 16px;">Hi ${safeName},</p>
               <p style="color: #555555; line-height: 1.6; font-size: 16px;">Thank you for using the <strong>Homez Wealth Projection Engine (HWPE)</strong>.</p>
               <p style="color: #555555; line-height: 1.6; font-size: 16px;">Your comprehensive property investment analysis has been generated and is attached to this email. This report includes:</p>
               <ul style="color: #555555; line-height: 1.6; font-size: 15px; padding-left: 20px;">
@@ -59,15 +100,15 @@ export default async function handler(req: any, res: any) {
                  <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #666; width: 80px;">Name:</td>
-                        <td style="padding: 4px 0; font-size: 14px; color: #064E2C; font-weight: bold;">${userName}</td>
+                        <td style="padding: 4px 0; font-size: 14px; color: #064E2C; font-weight: bold;">${safeName}</td>
                     </tr>
                     <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #666;">Email:</td>
-                        <td style="padding: 4px 0; font-size: 14px; color: #333;">${userEmail}</td>
+                        <td style="padding: 4px 0; font-size: 14px; color: #333;">${safeEmail}</td>
                     </tr>
                     <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #666;">Phone:</td>
-                        <td style="padding: 4px 0; font-size: 14px; color: #333;">${userPhone || '<span style="color:#999; font-style:italic;">Not Provided</span>'}</td>
+                        <td style="padding: 4px 0; font-size: 14px; color: #333;">${safePhone || '<span style="color:#999; font-style:italic;">Not Provided</span>'}</td>
                     </tr>
                  </table>
               </div>
@@ -97,7 +138,7 @@ export default async function handler(req: any, res: any) {
       `,
       attachments: [
         {
-          filename: fileName,
+          filename: safeFileName,
           content: pdfBase64,
         },
       ],
